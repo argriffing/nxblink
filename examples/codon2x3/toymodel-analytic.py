@@ -12,7 +12,7 @@ from numpy.testing import assert_allclose
 import scipy.linalg
 
 from nxmctree import dynamic_fset_lhood
-import util
+from nxblink import util
 
 
 def get_Q_primary():
