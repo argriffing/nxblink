@@ -4,8 +4,6 @@ Helper functions related to transition matrices and uniformization.
 """
 from __future__ import division, print_function, absolute_import
 
-#TODO move this to a more appropriate python package
-
 import networkx as nx
 
 
@@ -97,6 +95,20 @@ def get_uniformized_P_nx(Q_nx, total_rates, omega):
 
 
 def get_identity_P_nx(states):
+    """
+    Get an identity transition matrix.
+
+    Parameters
+    ----------
+    states : collection of hashables
+        collection of states, not necessarily ordered
+
+    Returns
+    -------
+    P_nx : networkx DiGraph
+        Identity matrix, to be interpreted as a transition matrix.
+
+    """
     P_nx = nx.DiGraph()
     for s in states:
         P_nx.add_edge(s, s, weight=1)
@@ -104,8 +116,62 @@ def get_identity_P_nx(states):
 
 
 def get_node_to_tm(T, root, node_to_blen):
+    """
+    Use branch lengths to compute the distance from each node to the root.
+
+    Parameters
+    ----------
+    T : networkx DiGraph
+        the tree
+    root : hashable
+        the root of the tree
+    node_to_blen : dict
+        branch length associated with each directed edge
+
+    Returns
+    -------
+    node_to_tm : dict
+        map from node to distance from the root
+
+    """
     node_to_tm = {root : 0}
     for edge in nx.bfs_edges(T, root):
         va, vb = edge
         node_to_tm[vb] = node_to_tm[va] + node_to_blen[edge]
     return node_to_tm
+
+
+def get_Q_blink(rate_on=None, rate_off=None):
+    Q_blink = nx.DiGraph()
+    Q_blink.add_weighted_edges_from((
+        (False, True, rate_on),
+        (True, False, rate_off),
+        ))
+    return Q_blink
+
+
+def get_Q_meta(Q_primary, primary_to_tol):
+    """
+    Return a DiGraph of rates from primary states into sets of states.
+
+    """
+    Q_meta = nx.DiGraph()
+    for primary_sa, primary_sb in Q_primary.edges():
+        rate = Q_primary[primary_sa][primary_sb]['weight']
+        tol_sb = primary_to_tol[primary_sb]
+        if not Q_meta.has_edge(primary_sa, tol_sb):
+            Q_meta.add_edge(primary_sa, tol_sb, weight=rate)
+        else:
+            Q_meta[primary_sa][tol_sb]['weight'] += rate
+    return Q_meta
+
+
+def hamming_distance(va, vb):
+    return sum(1 for a, b in zip(va, vb) if a != b)
+
+
+def compound_state_is_ok(primary_to_tol, state):
+    primary, tols = state
+    tclass = primary_to_tol[primary]
+    return True if tols[tclass] else False
+
