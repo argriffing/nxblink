@@ -4,7 +4,7 @@ Functions related to navigation of the tree structure.
 """
 from __future__ import division, print_function, absolute_import
 
-from util import do_nothing
+from .util import do_nothing
 
 
 # OK so this is not really navigation...

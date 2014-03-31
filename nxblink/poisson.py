@@ -9,9 +9,9 @@ import random
 import numpy as np
 import networkx as nx
 
-from util import get_total_rates, get_omega
-from navigation import gen_segments
-from trajectory import Event
+from .util import get_total_rates, get_omega
+from .navigation import gen_segments
+from .trajectory import Event
 
 
 __all__ = ['sample_primary_poisson_events', 'sample_blink_poisson_events']

@@ -9,8 +9,9 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import networkx as nx
 
-from util import get_total_rates, get_omega, get_poisson_rates
-from util import get_uniformized_P_nx, get_identity_P_nx
+from .util import (
+        get_total_rates, get_omega, get_poisson_rates,
+        get_uniformized_P_nx, get_identity_P_nx)
 
 
 class Trajectory(object):
