@@ -158,7 +158,7 @@ def get_blink_dwell_times(T, node_to_tm, blink_tracks):
 
 
 def blinking_model_rao_teh(
-        T, root, node_to_tm, primary_to_tol,
+        T, root, node_to_tm,
         Q_primary, Q_blink, Q_meta,
         primary_track, tolerance_tracks, interaction_map):
     """
@@ -170,8 +170,6 @@ def blinking_model_rao_teh(
     root : x
         x
     node_to_tm : x
-        x
-    primary_to_tol : x
         x
     Q_primary : x
         x
@@ -196,7 +194,7 @@ def blinking_model_rao_teh(
     init_incomplete_primary_events(T, node_to_tm, primary_track, diameter)
     #
     # Sample the state of the primary track.
-    sample_primary_transitions(T, root, node_to_tm, primary_to_tol,
+    sample_primary_transitions(T, root, node_to_tm,
             primary_track, tolerance_tracks, interaction_map['P'])
     #
     # Remove self-transition events from the primary track.
@@ -212,7 +210,7 @@ def blinking_model_rao_teh(
         # clear state labels for the primary track
         primary_track.clear_state_labels()
         # sample state transitions for the primary track
-        sample_primary_transitions(T, root, node_to_tm, primary_to_tol,
+        sample_primary_transitions(T, root, node_to_tm,
                 primary_track, tolerance_tracks, interaction_map['P'])
         # remove self transitions for the primary track
         primary_track.remove_self_transitions()
@@ -227,7 +225,7 @@ def blinking_model_rao_teh(
             # clear state labels for this blink track
             track.clear_state_labels()
             # sample state transitions for this blink track
-            sample_blink_transitions(T, root, node_to_tm, primary_to_tol,
+            sample_blink_transitions(T, root, node_to_tm,
                     track, [primary_track], interaction_map[name], Q_meta)
             # remove self transitions for this blink track
             track.remove_self_transitions()
@@ -326,7 +324,7 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     total_dwell_off = 0
     total_dwell_on = 0
     for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
-            T, root, node_to_tm, primary_to_tol,
+            T, root, node_to_tm,
             Q_primary, Q_blink, Q_meta,
             primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1

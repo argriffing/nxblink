@@ -75,7 +75,7 @@ def resample_using_meta_node_tree(root, meta_node_tree, mroot,
             mb.set_sa(state)
 
 
-def sample_blink_transitions(T, root, node_to_tm, primary_to_tol,
+def sample_blink_transitions(T, root, node_to_tm,
         fg_track, bg_tracks, bg_to_fg_fset, Q_meta):
     """
     Sample the history (nodes to states) and the events (edge to event list).
@@ -155,7 +155,7 @@ def sample_blink_transitions(T, root, node_to_tm, primary_to_tol,
             fg_track, node_to_data_lmap)
 
 
-def sample_primary_transitions(T, root, node_to_tm, primary_to_tol,
+def sample_primary_transitions(T, root, node_to_tm,
         fg_track, bg_tracks, bg_to_fg_fset):
     """
     Sample the history (nodes to states) and the events (edge to event list).
