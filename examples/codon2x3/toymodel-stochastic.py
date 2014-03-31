@@ -38,16 +38,12 @@ from nxmctree.sampling import sample_history
 import nxblink
 from nxblink.poisson import (
         sample_primary_poisson_events, sample_blink_poisson_events)
-from nxblink.util import (
-        hamming_distance, compound_state_is_ok, get_Q_blink, get_Q_meta,
-        get_node_to_tm, get_total_rates, get_omega, get_uniformized_P_nx,
-        do_nothing, set_or_confirm_history_state)
+from nxblink.util import get_Q_blink, get_Q_meta, get_node_to_tm
 from nxblink.raoteh import (
         sample_blink_transitions, sample_primary_transitions,
         resample_using_meta_node_tree)
-from nxblink.navigation import MetaNode, gen_meta_segments, gen_segments
+from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory, Event
-from nxblink.graphutil import get_edge_tree
 
 from nxmodel import (
         get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
