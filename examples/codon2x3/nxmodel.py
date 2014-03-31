@@ -49,12 +49,12 @@ def get_primary_to_tol():
 
     """
     primary_to_tol = {
-            0 : 'T0',
-            1 : 'T0',
-            2 : 'T1',
-            3 : 'T1',
-            4 : 'T2',
-            5 : 'T2',
+            0 : 0,
+            1 : 0,
+            2 : 1,
+            3 : 1,
+            4 : 2,
+            5 : 2,
             }
     return primary_to_tol
 

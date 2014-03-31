@@ -12,84 +12,21 @@ from numpy.testing import assert_allclose
 import scipy.linalg
 
 from nxmctree import dynamic_fset_lhood
-from nxblink import util
-
-
-def get_Q_primary():
-    # this is like a symmetric codon rate matrix
-    rate = 1
-    Q_primary = nx.DiGraph()
-    Q_primary.add_weighted_edges_from((
-        (0, 1, rate),
-        (0, 2, rate),
-        (1, 0, rate),
-        (1, 3, rate),
-        (2, 0, rate),
-        (2, 3, rate),
-        (2, 4, rate),
-        (3, 1, rate),
-        (3, 2, rate),
-        (3, 5, rate),
-        (4, 2, rate),
-        (4, 5, rate),
-        (5, 3, rate),
-        (5, 4, rate),
-        ))
-    return Q_primary
-
-
-def get_primary_to_tol():
-    # this is like a genetic code mapping codons to amino acids
-    primary_to_tol = {
-            0 : 0,
-            1 : 0,
-            2 : 1,
-            3 : 1,
-            4 : 2,
-            5 : 2,
-            }
-    return primary_to_tol
-
-
-def get_T_and_root():
-    # rooted tree, deliberately without branch lengths
-    T = nx.DiGraph()
-    T.add_edges_from([
-        ('N1', 'N0'),
-        ('N1', 'N2'),
-        ('N1', 'N5'),
-        ('N2', 'N3'),
-        ('N2', 'N4'),
-        ])
-    return T, 'N1'
-
-
-def get_edge_to_blen():
-    edge_to_blen = {
-            ('N1', 'N0') : 0.5,
-            ('N1', 'N2') : 0.5,
-            ('N1', 'N5') : 0.5,
-            ('N2', 'N3') : 0.5,
-            ('N2', 'N4') : 0.5,
-            }
-    return edge_to_blen
-
-
-def hamming_distance(va, vb):
-    return sum(1 for a, b in zip(va, vb) if a != b)
+from nxblink.util import (
+        hamming_distance, compound_state_is_ok)
+from nxmodel import (
+        get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
 
 
 def get_compound_states(primary_to_tol):
+    """
+    Helper function for dense rate matrices.
+
+    """
     nprimary = len(primary_to_tol)
     all_tols = list(itertools.product((0, 1), repeat=3))
     compound_states = list(itertools.product(range(nprimary), all_tols))
     return compound_states
-
-
-def compound_state_is_ok(primary_to_tol, state):
-    primary, tols = state
-    tclass = primary_to_tol[primary]
-    return True if tols[tclass] else False
 
 
 def define_compound_process(Q_primary, compound_states, primary_to_tol):
