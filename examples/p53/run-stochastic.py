@@ -274,15 +274,15 @@ if __name__ == '__main__':
             help='limit the number of summarized columns')
     parser.add_argument('--disease', required=True,
             help='csv file with filtered disease data')
-    parser.add_argument('--dt', type=float,
-            help='discretize the tree with this maximum branchlet length')
-    parser.add_argument('--prior-switch-tsv-out',
-            default='prior.switch.data.tsv',
-            help='write prior per-branch switching probabilities '
-                'to this file')
-    parser.add_argument('--posterior-switch-tsv-out',
-            default='posterior.switch.data.tsv',
-            help='write posterior per-site per-branch switching probabilities '
-                'to this file')
+    #parser.add_argument('--dt', type=float,
+            #help='discretize the tree with this maximum branchlet length')
+    #parser.add_argument('--prior-switch-tsv-out',
+            #default='prior.switch.data.tsv',
+            #help='write prior per-branch switching probabilities '
+                #'to this file')
+    #parser.add_argument('--posterior-switch-tsv-out',
+            #default='posterior.switch.data.tsv',
+            #help='write posterior per-site per-branch switching probabilities '
+                #'to this file')
     main(parser.parse_args())
 
