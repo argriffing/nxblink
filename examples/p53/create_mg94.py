@@ -1,7 +1,48 @@
 """
-Copypasted from cmedb/create-mg94.
+Implement the Muse-Gaut 1994 codon rate matrix as an nx.DiGraph.
 
-This module is modified to not use sqlite3.
+The Muse-Gaut 1994 (MG94) codon model is a time-reversible
+continuous time Markov process that allows a mutational equilibrium,
+a mutational transition/transversion rate ratio 'kappa',
+and an 'omega' parameter that distinguishes between synonymous
+and nonsynonymous codon substitution rates.
+This model is nearly the same as the Goldman-Yang 1994 (GY94) codon model.
+The MG94 parameterization is slightly better in the sense of having a clearer
+mechanistic interpretation, but the MG94 authors were less well known.
+
+TODO:
+Add a general purpose python package or module
+for analysis of rate matrices of continuous-time finite-state Markov processes.
+Because this package would be for prototypes, it could emphasize convenience,
+so it could use a networkx DiGraph representation of a rate matrix
+of a continuous time Markov process.
+This representation will allow the states to be anything hashable,
+rather then forcing an artificial ordering to be imposed on categorical states.
+Furthermore it will allow the representation of processes that require
+huge sparse rate matrices.
+This package would avoid doing anything with trees.
+At least initially it could also avoid code for sampling
+or for matrix exponentiation.
+Uniformization could also be out of scope initially;
+perhaps later add a separate module or package for
+uniformization-based algorithms.
+This package should allow some input validation.
+For example:
+    * check that a finite dict distn is reasonable (non-negative entries
+      and entries sum to 1).
+    * check that a nx.DiGraph rate matrix has the right form (all edges
+      have non-negative weights, and no loops exist, where a loop is an
+      edge connecting a state to itself)
+    * check that a state distribution is at equilibrium with respect
+      to a given rate matrix.
+    * check that a state distribution meets the detailed balance equations
+      with respect to a given rate matrix.
+nxrate
+
+
+This module has been copied and modified
+from cmedb/create-mg94.py -> raoteh/examples/p53/create_mg94 ->
+nxblink/examples/p53/create_mg94.
 
 """
 from __future__ import division, print_function, absolute_import
@@ -9,17 +50,33 @@ from __future__ import division, print_function, absolute_import
 import networkx as nx
 import numpy as np
 
-import cmedbutil
+import nxmctree
+from nxmctree.util import prod, dict_distn
 
-from raoteh.sampler import _util, _density
-
-
-
-def hamming_distance(a, b):
-    return sum(1 for x, y in zip(a, b) if x != y)
+import nxblink
+from nxblink.util import hamming_distance
 
 
-#TODO backport this into cmedbutil
+#import cmedbutil
+
+#TODO replace these...
+#from raoteh.sampler import _util, _density
+
+#distn = _util.get_normalized_dict_distn(weights)
+
+# check nucleotide distribution
+#nt_distn_dense = _density.dict_to_numpy_array(nt_distn)
+#cmedbutil.assert_stochastic_vector(nt_distn_dense)
+
+# check time-reversible rate matrix invariants
+#Q_dense = _density.rate_matrix_to_numpy_array(Q, nodelist=states)
+#distn_dense = _density.dict_to_numpy_array(distn, nodelist=states)
+#cmedbutil.assert_stochastic_vector(distn_dense)
+#cmedbutil.assert_rate_matrix(Q_dense)
+#cmedbutil.assert_equilibrium(Q_dense, distn_dense)
+#cmedbutil.assert_detailed_balance(Q_dense, distn_dense)
+
+
 def create_mg94(
         A, C, G, T,
         kappa, omega, genetic_code,
@@ -99,8 +156,8 @@ def create_mg94(
     # construct the stationary distribution
     weights = {}
     for i, (state, residue, codon) in enumerate(genetic_code):
-        weights[i] = np.prod([nt_distn[nt] for nt in codon])
-    distn = _util.get_normalized_dict_distn(weights)
+        weights[i] = prod(nt_distn[nt] for nt in codon)
+    distn = dict_distn(weights)
 
     # compute the expected syn and nonsyn rates for rescaling
     expected_syn_rate = 0.0
