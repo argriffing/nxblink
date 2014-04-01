@@ -10,8 +10,8 @@ This model is nearly the same as the Goldman-Yang 1994 (GY94) codon model.
 The MG94 parameterization is slightly better in the sense of having a clearer
 mechanistic interpretation, but the MG94 authors were less well known.
 
-TODO:
-Add a general purpose python package or module
+Added nxrate:
+A general purpose python package or module
 for analysis of rate matrices of continuous-time finite-state Markov processes.
 Because this package would be for prototypes, it could emphasize convenience,
 so it could use a networkx DiGraph representation of a rate matrix
@@ -37,10 +37,8 @@ For example:
       to a given rate matrix.
     * check that a state distribution meets the detailed balance equations
       with respect to a given rate matrix.
-nxrate
 
-
-This module has been copied and modified
+This MG94 module has been copied and modified
 from cmedb/create-mg94.py -> raoteh/examples/p53/create_mg94 ->
 nxblink/examples/p53/create_mg94.
 
@@ -53,28 +51,13 @@ import numpy as np
 import nxmctree
 from nxmctree.util import prod, dict_distn
 
+import nxrate
+from nxrate.testing import (
+        assert_distn, assert_nxdistn, assert_rate_matrix,
+        assert_equilibrium, assert_detailed_balance)
+
 import nxblink
 from nxblink.util import hamming_distance
-
-
-#import cmedbutil
-
-#TODO replace these...
-#from raoteh.sampler import _util, _density
-
-#distn = _util.get_normalized_dict_distn(weights)
-
-# check nucleotide distribution
-#nt_distn_dense = _density.dict_to_numpy_array(nt_distn)
-#cmedbutil.assert_stochastic_vector(nt_distn_dense)
-
-# check time-reversible rate matrix invariants
-#Q_dense = _density.rate_matrix_to_numpy_array(Q, nodelist=states)
-#distn_dense = _density.dict_to_numpy_array(distn, nodelist=states)
-#cmedbutil.assert_stochastic_vector(distn_dense)
-#cmedbutil.assert_rate_matrix(Q_dense)
-#cmedbutil.assert_equilibrium(Q_dense, distn_dense)
-#cmedbutil.assert_detailed_balance(Q_dense, distn_dense)
 
 
 def create_mg94(
@@ -167,11 +150,11 @@ def create_mg94(
             if hamming_distance(codon_a, codon_b) != 1:
                 continue
             if (a in distn) and Q.has_edge(a, b):
-                rate = distn[a] * Q[a][b]['weight']
+                flow = distn[a] * Q[a][b]['weight']
                 if residue_a == residue_b:
-                    expected_syn_rate += rate
+                    expected_syn_rate += flow
                 else:
-                    expected_nonsyn_rate += rate
+                    expected_nonsyn_rate += flow
 
     # rescale the rate matrix to taste
     if target_expected_rate is not None:
@@ -185,16 +168,13 @@ def create_mg94(
         Q[sa][sb]['weight'] *= scale
 
     # check nucleotide distribution
-    nt_distn_dense = _density.dict_to_numpy_array(nt_distn)
-    cmedbutil.assert_stochastic_vector(nt_distn_dense)
+    assert_distn(nt_distn)
 
     # check time-reversible rate matrix invariants
-    Q_dense = _density.rate_matrix_to_numpy_array(Q, nodelist=states)
-    distn_dense = _density.dict_to_numpy_array(distn, nodelist=states)
-    cmedbutil.assert_stochastic_vector(distn_dense)
-    cmedbutil.assert_rate_matrix(Q_dense)
-    cmedbutil.assert_equilibrium(Q_dense, distn_dense)
-    cmedbutil.assert_detailed_balance(Q_dense, distn_dense)
+    assert_distn(distn)
+    assert_rate_matrix(Q)
+    assert_equilibrium(Q, distn)
+    assert_detailed_balance(Q, distn)
 
     return Q, distn, state_to_residue, residue_to_part
 

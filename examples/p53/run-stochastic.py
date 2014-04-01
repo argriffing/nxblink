@@ -17,6 +17,7 @@ import sys
 import networkx as nx
 import numpy as np
 
+import create_mg94
 import app_helper
 
 BENIGN = 'BENIGN'
@@ -91,10 +92,10 @@ def main(args):
             (i, residue_to_part[r]) for i, r in state_to_residue.items())
 
     # Define the dense default process codon rate matrix and distribution.
-    Q_dense = _density.rate_matrix_to_numpy_array(
-            Q, nodelist=states)
-    primary_distn_dense = _density.dict_to_numpy_array(
-            primary_distn, nodelist=states)
+    #Q_dense = _density.rate_matrix_to_numpy_array(
+            #Q, nodelist=states)
+    #primary_distn_dense = _density.dict_to_numpy_array(
+            #primary_distn, nodelist=states)
 
     # Report the genetic code.
     print('genetic code:')
@@ -106,16 +107,16 @@ def main(args):
     print()
 
     # Define an SD decomposition of the default process rate matrix.
-    D1 = primary_distn_dense
-    S1 = np.dot(Q_dense, np.diag(qtop.pseudo_reciprocal(D1)))
+    #D1 = primary_distn_dense
+    #S1 = np.dot(Q_dense, np.diag(qtop.pseudo_reciprocal(D1)))
 
     # Change the root to 'Has' which is typoed from 'H'omo 'sa'piens.
     original_root = root
     root = name_to_leaf['Has']
 
     # print a summary of the tree
-    print_tree_summary(tree)
-    print()
+    #print_tree_summary(tree)
+    #print()
 
     # Read the alignment.
     print('reading the alignment...')
@@ -154,6 +155,7 @@ def main(args):
 
     # Compute prior switching probabilities per branch.
     # This does not use alignment or disease information.
+    """
     if args.prior_switch_tsv_out is not None:
 
         # Every codon state is benign.
@@ -194,9 +196,11 @@ def main(args):
             for row in builder.edge_bucket:
                 pos, na, nb, p = row
                 print(na, nb, p, sep='\t', file=fout)
+    """
 
     # Compute posterior switching probabilities per site per branch.
     # This uses alignment and disease information.
+    """
     if args.posterior_switch_tsv_out is not None:
 
         # Analyze as many codon alignment columns as requested.
@@ -227,6 +231,7 @@ def main(args):
         with open(args.posterior_switch_tsv_out, 'w') as fout:
             for row in builder.edge_bucket:
                 print(*row, sep='\t', file=fout)
+    """
 
 
     # Optionally report information from the builder.

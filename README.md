@@ -10,6 +10,8 @@ Required dependencies:
    - `$ pip install --user git+https://github.com/networkx/networkx`
  * [nxmctree](https://github.com/argriffing/nxmctree) (discrete time sampling)
    - `$ pip install --user git+https://github.com/argriffing/nxmctree`
+ * [nxrate](https://github.com/argriffing/nxrate) (continuous time rate matrix)
+   - `$ pip install --user git+https://github.com/argriffing/nxrate`
 
 Optional dependencies:
  * [nose](https://nose.readthedocs.org/) (testing)
