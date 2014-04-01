@@ -10,8 +10,8 @@ This is from the scipy runtests.py script.
 from __future__ import division, print_function, absolute_import
 
 
-PROJECT_MODULE = 'nxmctree'
-PROJECT_ROOT_FILES = ['nxmctree', 'setup.py']
+PROJECT_MODULE = 'nxblink'
+PROJECT_ROOT_FILES = ['nxblink', 'setup.py']
 
 import sys
 import os

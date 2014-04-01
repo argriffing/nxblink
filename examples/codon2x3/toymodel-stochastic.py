@@ -73,14 +73,23 @@ def init_blink_history(T, track):
     """
     Initial blink history is True where consistent with the data.
 
+    This defines the blink states at nodes of the tree T.
+
     """
     for v in T:
-        track.history[v] = (True in track.data[v])
+        if True in track.data[v]:
+            blink_state = True
+        else:
+            blink_state = False
+        track.history[v] = blink_state
 
 
 def init_complete_blink_events(T, node_to_tm, track):
     """
-    Init blink track.
+    Add actual blink transitions near each end of the edge.
+
+    These events are designed so that in the middle 2/3 of each edge
+    every primary state is tolerated according to the blinking process.
 
     """
     for edge in T.edges():
@@ -90,15 +99,21 @@ def init_complete_blink_events(T, node_to_tm, track):
         edge_tma = node_to_tm[va]
         edge_tmb = node_to_tm[vb]
         blen = edge_tmb - edge_tma
-        tma = edge_tma + blen * np.random.uniform(0, 1/3)
-        tmb = edge_tma + blen * np.random.uniform(2/3, 1)
-        eva = Event(track=track, tm=tma, sa=sa, sb=True)
-        evb = Event(track=track, tm=tmb, sa=True, sb=sb)
-        track.events[edge] = [eva, evb]
+        events = []
+        if blen:
+            if not sa:
+                tma = edge_tma + blen * np.random.uniform(0, 1/3)
+                events.append(Event(track=track, tm=tma, sa=sa, sb=True))
+            if not sb:
+                tmb = edge_tma + blen * np.random.uniform(2/3, 1)
+                events.append(Event(track=track, tm=tmb, sa=True, sb=sb))
+        track.events[edge] = events
 
 
 def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
     """
+    This function assigns potential transition times but not the states.
+
     Parameters
     ----------
     T : nx tree
@@ -116,9 +131,11 @@ def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
         edge_tma = node_to_tm[va]
         edge_tmb = node_to_tm[vb]
         blen = edge_tmb - edge_tma
-        times = edge_tma + blen * np.random.uniform(
-                low=1/3, high=2/3, size=diameter-1)
-        events = [Event(track=primary_track, tm=tm) for tm in times]
+        events = []
+        if blen:
+            times = edge_tma + blen * np.random.uniform(
+                    low=1/3, high=2/3, size=diameter-1)
+            events = [Event(track=primary_track, tm=tm) for tm in times]
         primary_track.events[edge] = events
 
 
@@ -171,6 +188,8 @@ def blinking_model_rao_teh(
         x
     Q_blink : x
         x
+    Q_meta : x
+        x
     primary_track : hashable
         label of the primary track
     tolerance_tracks : collection of hashables
@@ -186,7 +205,7 @@ def blinking_model_rao_teh(
         track.remove_self_transitions()
 
     # Initialize the primary trajectory with many incomplete events.
-    diameter = 4
+    diameter = nx.diameter(Q_primary)
     init_incomplete_primary_events(T, node_to_tm, primary_track, diameter)
     #
     # Sample the state of the primary track.

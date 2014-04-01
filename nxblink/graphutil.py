@@ -27,3 +27,35 @@ def get_edge_tree(T, root):
                 T_dual.add_edge((v, c), (c, g))
     return T_dual, dual_root
 
+
+def partition_nodes(T, edge_to_blen):
+    """
+    Partition nodes of a tree.
+
+    The nodes are partitioned into equivalence classes,
+    where two nodes are considered equivalent if they are connected
+    by a branch of length exactly zero.
+
+    Parameters
+    ----------
+    T : networkx DiGraph
+        The tree.
+    edge_to_blen : dict
+        Maps directed edges of T to non-negative branch lengths.
+
+    Returns
+    -------
+    components : list of list of nodes
+        Each list contains the nodes of a connected component.
+
+    """
+    # Compute an undirected graph representing an equivalence relation.
+    G = nx.Graph()
+    G.add_nodes_from(T)
+    for edge in T.edges():
+        if not edge_to_blen[edge]:
+            G.add_edge(*edge)
+
+    # Return the connected components of the graph.
+    return nx.connected_components(G)
+
