@@ -4,7 +4,8 @@ This toy model is described in raoteh/examples/codon2x3.
 """
 from __future__ import division, print_function, absolute_import
 
-import itertools
+from itertools import product
+from collections import namedtuple
 
 import networkx as nx
 import numpy as np
@@ -12,20 +13,58 @@ from numpy.testing import assert_allclose
 import scipy.linalg
 
 from nxmctree import dynamic_fset_lhood
-from nxblink.util import (
-        hamming_distance, compound_state_is_ok)
+from nxblink.util import hamming_distance
 from nxmodel import (
         get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
 
 
-def get_compound_states(primary_to_tol):
+# The compound state consists of a primary state and three tolerance states.
+State = namedtuple('State', 'P T0 T1 T2')
+
+
+def compound_state_is_ok(primary_to_tol, state):
+    """
+    Check whether the primary state is compatible with its tolerance.
+
+    Parameters
+    ----------
+    primary_to_tol : dict
+        Map from primary state to the name of its tolerance class.
+    state : State
+        The compound state as a named tuple.
+
+    Returns
+    -------
+    ret : bool
+        True if the primary state is compatible with its tolerance state.
+
+    """
+    return getattr(state, primary_to_tol[state.P])
+
+
+def get_compound_states():
     """
     Helper function for dense rate matrices.
 
+    Note that some of the compound states in this list may be infeasible.
+
     """
-    nprimary = len(primary_to_tol)
-    all_tols = list(itertools.product((0, 1), repeat=3))
-    compound_states = list(itertools.product(range(nprimary), all_tols))
+    nprimary = 6
+
+    # Define the name and state space of each subprocess.
+    track_names = State._fields
+    track_states = (
+            range(nprimary),
+            (False, True),
+            (False, True),
+            (False, True),
+            )
+
+    # The compound state space is the cartesian product
+    # of subprocess state spaces.
+    compound_states = [State(*x) for x in product(*track_states)]
+
+    # Return the ordered compound states.
     return compound_states
 
 
@@ -45,42 +84,37 @@ def define_compound_process(Q_primary, compound_states, primary_to_tol):
     for i, sa in enumerate(compound_states):
 
         # skip compound states that have zero probability
-        prim_a, tols_a = sa
-        tclass_a = primary_to_tol[prim_a]
-        if not tols_a[tclass_a]:
+        if not compound_state_is_ok(primary_to_tol, sa):
             continue
 
         for j, sb in enumerate(compound_states):
 
             # skip compound states that have zero probability
-            prim_b, tols_b = sb
-            tclass_b = primary_to_tol[prim_b]
-            if not tols_b[tclass_b]:
+            if not compound_state_is_ok(primary_to_tol, sb):
                 continue
 
-            # if neither or both primary state and tolerance change then skip
+            # if hamming distance between compound states is not 1 then skip
             if hamming_distance(sa, sb) != 1:
                 continue
 
-            # if the tolerances change at more than one position then skip
-            if hamming_distance(tols_a, tols_b) > 1:
-                continue
-
             # if a primary transition is not allowed then skip
-            if prim_a != prim_b and not Q_primary.has_edge(prim_a, prim_b):
+            if sa.P != sb.P and not Q_primary.has_edge(sa.P, sb.P):
                 continue
 
             # set the indicator according to the transition type
-            if prim_a != prim_b and tclass_a == tclass_b:
-                I_syn[i, j] = 1
-            elif prim_a != prim_b and tclass_a != tclass_b:
-                I_non[i, j] = 1
-            elif sum(tols_b) - sum(tols_a) == 1:
-                I_on[i, j] = 1
-            elif sum(tols_b) - sum(tols_a) == -1:
-                I_off[i, j] = 1
+            if sa.P != sb.P:
+                if primary_to_tol[sa.P] == primary_to_tol[sb.P]:
+                    I_syn[i, j] = 1
+                else:
+                    I_non[i, j] = 1
             else:
-                raise Exception
+                diff = sum(sb) - sum(sa)
+                if diff == 1:
+                    I_on[i, j] = 1
+                elif diff == -1:
+                    I_off[i, j] = 1
+                else:
+                    raise Exception
 
     return I_syn, I_non, I_on, I_off
 
@@ -272,7 +306,7 @@ def main():
     primary_to_tol = get_primary_to_tol()
 
     # Define the ordering of the compound states.
-    compound_states = get_compound_states(primary_to_tol)
+    compound_states = get_compound_states()
 
     # No data.
     print ('expectations given no alignment or disease data')
