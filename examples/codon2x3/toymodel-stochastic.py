@@ -38,7 +38,8 @@ from nxmctree.sampling import sample_history
 import nxblink
 from nxblink.poisson import (
         sample_primary_poisson_events, sample_blink_poisson_events)
-from nxblink.util import get_Q_blink, get_Q_meta, get_node_to_tm
+from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
+from nxblink.util import get_node_to_tm
 from nxblink.raoteh import (
         init_blink_history,
         init_complete_blink_events,
@@ -139,7 +140,7 @@ def blinking_model_rao_teh(
     #
     # Sample the state of the primary track.
     sample_primary_transitions(T, root, node_to_tm,
-            primary_track, tolerance_tracks, interaction_map['P'])
+            primary_track, tolerance_tracks, interaction_map['PRIMARY'])
     #
     # Remove self-transition events from the primary track.
     primary_track.remove_self_transitions()
@@ -150,12 +151,12 @@ def blinking_model_rao_teh(
         # add poisson events to the primary track
         for edge in T.edges():
             sample_primary_poisson_events(edge, node_to_tm,
-                    primary_track, tolerance_tracks, interaction_map['P'])
+                    primary_track, tolerance_tracks, interaction_map['PRIMARY'])
         # clear state labels for the primary track
         primary_track.clear_state_labels()
         # sample state transitions for the primary track
         sample_primary_transitions(T, root, node_to_tm,
-                primary_track, tolerance_tracks, interaction_map['P'])
+                primary_track, tolerance_tracks, interaction_map['PRIMARY'])
         # remove self transitions for the primary track
         primary_track.remove_self_transitions()
 
@@ -233,7 +234,7 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     # Define primary trajectory.
     primary_track = Trajectory(
-            name='P', data=track_to_node_to_data_fset['P'],
+            name='PRIMARY', data=track_to_node_to_data_fset['PRIMARY'],
             history=dict(), events=dict(),
             prior_root_distn=primary_distn, Q_nx=Q_primary,
             uniformization_factor=uniformization_factor)
@@ -259,9 +260,9 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
     #k = 800
-    k = 400
+    #k = 400
     #k = 200
-    #k = 80
+    k = 80
     nsamples = k * k
     burnin = nsamples // 10
     ncounted = 0
@@ -315,63 +316,15 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
 def main():
 
     # Get the analog of the genetic code.
-    primary_to_tol = get_primary_to_tol()
-
     # Define track interactions.
-    # This is analogous to the creation of the compound rate matrices.
-    interaction_map = {
-            'P' : {
-                'T0' : {
-                    True : {0, 1, 2, 3, 4, 5},
-                    False : {2, 3, 4, 5},
-                    },
-                'T1' : {
-                    True : {0, 1, 2, 3, 4, 5},
-                    False : {0, 1, 4, 5},
-                    },
-                'T2' : {
-                    True : {0, 1, 2, 3, 4, 5},
-                    False : {0, 1, 2, 3},
-                    }
-                },
-            'T0' : {
-                'P' : {
-                    0 : {True},
-                    1 : {True},
-                    2 : {False, True},
-                    3 : {False, True},
-                    4 : {False, True},
-                    5 : {False, True},
-                    }
-                },
-            'T1' : {
-                'P' : {
-                    0 : {False, True},
-                    1 : {False, True},
-                    2 : {True},
-                    3 : {True},
-                    4 : {False, True},
-                    5 : {False, True},
-                    }
-                },
-            'T2' : {
-                'P' : {
-                    0 : {False, True},
-                    1 : {False, True},
-                    2 : {False, True},
-                    3 : {False, True},
-                    4 : {True},
-                    5 : {True},
-                    }
-                }
-            }
-
+    primary_to_tol = get_primary_to_tol()
+    interaction_map = get_interaction_map(primary_to_tol)
 
     # No data.
     print ('expectations given no alignment or disease data')
     print()
     data = {
-            'P' : {
+            'PRIMARY' : {
                 'N0' : {0, 1, 2, 3, 4, 5},
                 'N1' : {0, 1, 2, 3, 4, 5},
                 'N2' : {0, 1, 2, 3, 4, 5},
@@ -412,7 +365,7 @@ def main():
     print ('expectations given only alignment data but not disease data')
     print()
     data = {
-            'P' : {
+            'PRIMARY' : {
                 'N0' : {0},
                 'N1' : {0, 1, 2, 3, 4, 5},
                 'N2' : {0, 1, 2, 3, 4, 5},
@@ -453,7 +406,7 @@ def main():
     print ('expectations given alignment and disease data')
     print()
     data = {
-            'P' : {
+            'PRIMARY' : {
                 'N0' : {0},
                 'N1' : {0, 1, 2, 3, 4, 5},
                 'N2' : {0, 1, 2, 3, 4, 5},
@@ -495,7 +448,7 @@ def main():
     print ('unobserved are now considered to be tolerated (blinked on))')
     print()
     data = {
-            'P' : {
+            'PRIMARY' : {
                 'N0' : {0},
                 'N1' : {0, 1, 2, 3, 4, 5},
                 'N2' : {0, 1, 2, 3, 4, 5},
