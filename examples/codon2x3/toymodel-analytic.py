@@ -55,9 +55,9 @@ def get_compound_states():
     track_names = State._fields
     track_states = (
             range(nprimary),
-            (False, True),
-            (False, True),
-            (False, True),
+            (0, 1),
+            (0, 1),
+            (0, 1),
             )
 
     # The compound state space is the cartesian product
@@ -327,27 +327,27 @@ def main():
     print()
     node_to_data_fset = {
             'N0' : {
-                (0, (1, 0, 0)),
-                (0, (1, 0, 1)),
-                (0, (1, 1, 0)),
-                (0, (1, 1, 1))},
+                State(0, 1, 0, 0),
+                State(0, 1, 0, 1),
+                State(0, 1, 1, 0),
+                State(0, 1, 1, 1)},
             'N1' : set(compound_states),
             'N2' : set(compound_states),
             'N3' : {
-                (4, (0, 0, 1)),
-                (4, (0, 1, 1)),
-                (4, (1, 0, 1)),
-                (4, (1, 1, 1))},
+                State(4, 0, 0, 1),
+                State(4, 0, 1, 1),
+                State(4, 1, 0, 1),
+                State(4, 1, 1, 1)},
             'N4' : {
-                (5, (0, 0, 1)),
-                (5, (0, 1, 1)),
-                (5, (1, 0, 1)),
-                (5, (1, 1, 1))},
+                State(5, 0, 0, 1),
+                State(5, 0, 1, 1),
+                State(5, 1, 0, 1),
+                State(5, 1, 1, 1)},
             'N5' : {
-                (1, (1, 0, 0)),
-                (1, (1, 0, 1)),
-                (1, (1, 1, 0)),
-                (1, (1, 1, 1))},
+                State(1, 1, 0, 0),
+                State(1, 1, 0, 1),
+                State(1, 1, 1, 0),
+                State(1, 1, 1, 1)},
             }
     run(primary_to_tol, compound_states, node_to_data_fset)
     print()
@@ -357,24 +357,24 @@ def main():
     print()
     node_to_data_fset = {
             'N0' : {
-                (0, (1, 0, 1))},
+                State(0, 1, 0, 1)},
             'N1' : set(compound_states),
             'N2' : set(compound_states),
             'N3' : {
-                (4, (0, 0, 1)),
-                (4, (0, 1, 1)),
-                (4, (1, 0, 1)),
-                (4, (1, 1, 1))},
+                State(4, 0, 0, 1),
+                State(4, 0, 1, 1),
+                State(4, 1, 0, 1),
+                State(4, 1, 1, 1)},
             'N4' : {
-                (5, (0, 0, 1)),
-                (5, (0, 1, 1)),
-                (5, (1, 0, 1)),
-                (5, (1, 1, 1))},
+                State(5, 0, 0, 1),
+                State(5, 0, 1, 1),
+                State(5, 1, 0, 1),
+                State(5, 1, 1, 1)},
             'N5' : {
-                (1, (1, 0, 0)),
-                (1, (1, 0, 1)),
-                (1, (1, 1, 0)),
-                (1, (1, 1, 1))},
+                State(1, 1, 0, 0),
+                State(1, 1, 0, 1),
+                State(1, 1, 1, 0),
+                State(1, 1, 1, 1)},
             }
     run(primary_to_tol, compound_states, node_to_data_fset)
     print()
@@ -386,15 +386,15 @@ def main():
     print()
     node_to_data_fset = {
             'N0' : {
-                (0, (1, 0, 1))},
+                State(0, 1, 0, 1)},
             'N1' : set(compound_states),
             'N2' : set(compound_states),
             'N3' : {
-                (4, (1, 1, 1))},
+                State(4, 1, 1, 1)},
             'N4' : {
-                (5, (1, 1, 1))},
+                State(5, 1, 1, 1)},
             'N5' : {
-                (1, (1, 1, 1))},
+                State(1, 1, 1, 1)},
             }
     run(primary_to_tol, compound_states, node_to_data_fset)
     print()
