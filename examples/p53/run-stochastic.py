@@ -20,6 +20,10 @@ import numpy as np
 import create_mg94
 import app_helper
 
+from nxmodel import (
+        get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
+
+
 BENIGN = 'BENIGN'
 LETHAL = 'LETHAL'
 UNKNOWN = 'UNKNOWN'
@@ -27,67 +31,6 @@ UNKNOWN = 'UNKNOWN'
 #TODO unfinished
 
 
-
-def _get_primary_interaction_map(primary_to_part):
-    """
-    Helper function for get_interaction_map.
-
-    For the primary foreground track, for each tolerance background track,
-    get the map from each background track state to the set of allowed
-    foreground track states.
-
-    """
-    # initialize some structures
-    all_primary_states = set(primary_to_part)
-    part_to_primary_set = defaultdict(set)
-    for primary, part in primary_to_part.items():
-        part_to_primary_set[part].add(primary)
-
-    # construct the interaction map
-    interaction = {}
-    interaction['PRIMARY'] = {}
-    for part, primary_set in part_to_primary_set.items():
-        d = {
-                True : all_primary_states,
-                False : all_primary_states - primary_set}
-        interaction['PRIMARY'][part] = d
-    return interaction
-
-
-def get_tolerance_interaction_map(primary_to_part):
-    """
-    Helper function for get_interaction_map.
-
-    For each tolerance foreground track, for the primary background track,
-    get the map from each background track state to the set of allowed
-    foreground track states.
-
-    """
-    # initialize some structures
-    all_primary_states = set(primary_to_part)
-    part_to_primary_set = defaultdict(set)
-    for primary, part in primary_to_part.items():
-        part_to_primary_set[part].add(primary)
-
-    # construct the interaction map
-    interaction = {}
-    for part, primary_set in part_to_primary_set.items():
-        interaction[part] = {}
-        d = {}
-        for primary in all_primary_states:
-            if primary in primary_set:
-                d[primary] = {True}
-            else:
-                d[primary] = {False, True}
-        interaction[part]['PRIMARY'] = d
-    return interaction
-
-
-def get_interaction_map(primary_to_part):
-    interaction = {}
-    interaction.update(get_primary_interaction_map(primary_to_part))
-    interaction.update(get_tolerance_interaction_map(primary_to_part))
-    return interaction
 
 
 def get_jeff_params_e():

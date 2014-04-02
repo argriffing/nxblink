@@ -46,7 +46,8 @@ from nxblink.raoteh import (
         init_incomplete_primary_events,
         sample_blink_transitions,
         sample_primary_transitions,
-        resample_using_meta_node_tree)
+        resample_using_meta_node_tree,
+        blinking_model_rao_teh)
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
 
@@ -94,105 +95,6 @@ def get_blink_dwell_times(T, node_to_tm, blink_tracks):
                 else:
                     raise Exception
     return dwell_off, dwell_on
-
-
-###############################################################################
-# Main Rao-Teh-Gibbs sampling function.
-
-
-def blinking_model_rao_teh(
-        T, root, node_to_tm,
-        Q_primary, Q_blink, Q_meta,
-        primary_track, tolerance_tracks, interaction_map):
-    """
-
-    Parameters
-    ----------
-    T : x
-        x
-    root : x
-        x
-    node_to_tm : x
-        x
-    Q_primary : x
-        x
-    Q_blink : x
-        x
-    Q_meta : x
-        x
-    primary_track : hashable
-        label of the primary track
-    tolerance_tracks : collection of hashables
-        labels of tolerance tracks
-    interaction_map : dict
-        x
-
-    """
-    # Initialize blink history and events.
-    for track in tolerance_tracks:
-        init_blink_history(T, track)
-        init_complete_blink_events(T, node_to_tm, track)
-        track.remove_self_transitions()
-
-    # Initialize the primary trajectory with many incomplete events.
-    diameter = nx.diameter(Q_primary)
-    init_incomplete_primary_events(T, node_to_tm, primary_track, diameter)
-    #
-    # Sample the state of the primary track.
-    sample_primary_transitions(T, root, node_to_tm,
-            primary_track, tolerance_tracks, interaction_map['PRIMARY'])
-    #
-    # Remove self-transition events from the primary track.
-    primary_track.remove_self_transitions()
-
-    # Outer loop of the Rao-Teh-Gibbs sampler.
-    while True:
-
-        # add poisson events to the primary track
-        for edge in T.edges():
-            sample_primary_poisson_events(edge, node_to_tm,
-                    primary_track, tolerance_tracks, interaction_map['PRIMARY'])
-        # clear state labels for the primary track
-        primary_track.clear_state_labels()
-        # sample state transitions for the primary track
-        sample_primary_transitions(T, root, node_to_tm,
-                primary_track, tolerance_tracks, interaction_map['PRIMARY'])
-        # remove self transitions for the primary track
-        primary_track.remove_self_transitions()
-
-        # Update each blinking track.
-        for track in tolerance_tracks:
-            name = track.name
-            # add poisson events to this blink track
-            for edge in T.edges():
-                sample_blink_poisson_events(edge, node_to_tm,
-                        track, [primary_track], interaction_map[name])
-            # clear state labels for this blink track
-            track.clear_state_labels()
-            # sample state transitions for this blink track
-            sample_blink_transitions(T, root, node_to_tm,
-                    track, [primary_track], interaction_map[name], Q_meta)
-            # remove self transitions for this blink track
-            track.remove_self_transitions()
-
-        """
-        # Summarize the sample.
-        expected_on = 0
-        expected_off = 0
-        for track in tolerance_tracks:
-            for edge in T.edges():
-                for ev in track.events[edge]:
-                    transition = (ev.sa, ev.sb)
-                    if transition == (False, True):
-                        expected_on += 1
-                    elif transition == (True, False):
-                        expected_off += 1
-
-        yield expected_on, expected_off
-        """
-
-        # Yield the track states.
-        yield primary_track, tolerance_tracks
 
 
 def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
