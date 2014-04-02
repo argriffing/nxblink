@@ -18,6 +18,7 @@ from .util import (
         get_uniformized_P_nx)
 from .navigation import MetaNode, gen_meta_segments
 from .trajectory import Event
+from .poisson import sample_primary_poisson_events, sample_blink_poisson_events
 
 
 def init_blink_history(T, track):

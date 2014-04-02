@@ -36,8 +36,6 @@ import nxmctree
 from nxmctree.sampling import sample_history
 
 import nxblink
-from nxblink.poisson import (
-        sample_primary_poisson_events, sample_blink_poisson_events)
 from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.raoteh import (
