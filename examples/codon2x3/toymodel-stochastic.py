@@ -40,10 +40,14 @@ from nxblink.poisson import (
         sample_primary_poisson_events, sample_blink_poisson_events)
 from nxblink.util import get_Q_blink, get_Q_meta, get_node_to_tm
 from nxblink.raoteh import (
-        sample_blink_transitions, sample_primary_transitions,
+        init_blink_history,
+        init_complete_blink_events,
+        init_incomplete_primary_events,
+        sample_blink_transitions,
+        sample_primary_transitions,
         resample_using_meta_node_tree)
 from nxblink.navigation import gen_segments
-from nxblink.trajectory import Trajectory, Event
+from nxblink.trajectory import Trajectory
 
 from nxmodel import (
         get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
@@ -62,81 +66,6 @@ RATE_OFF = 1.0
 
 P_ON = RATE_ON / (RATE_ON + RATE_OFF)
 P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)
-
-
-###############################################################################
-# Primary track and blink track initialization.
-
-
-
-def init_blink_history(T, track):
-    """
-    Initial blink history is True where consistent with the data.
-
-    This defines the blink states at nodes of the tree T.
-
-    """
-    for v in T:
-        if True in track.data[v]:
-            blink_state = True
-        else:
-            blink_state = False
-        track.history[v] = blink_state
-
-
-def init_complete_blink_events(T, node_to_tm, track):
-    """
-    Add actual blink transitions near each end of the edge.
-
-    These events are designed so that in the middle 2/3 of each edge
-    every primary state is tolerated according to the blinking process.
-
-    """
-    for edge in T.edges():
-        va, vb = edge
-        sa = track.history[va]
-        sb = track.history[vb]
-        edge_tma = node_to_tm[va]
-        edge_tmb = node_to_tm[vb]
-        blen = edge_tmb - edge_tma
-        events = []
-        if blen:
-            if not sa:
-                tma = edge_tma + blen * np.random.uniform(0, 1/3)
-                events.append(Event(track=track, tm=tma, sa=sa, sb=True))
-            if not sb:
-                tmb = edge_tma + blen * np.random.uniform(2/3, 1)
-                events.append(Event(track=track, tm=tmb, sa=True, sb=sb))
-        track.events[edge] = events
-
-
-def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
-    """
-    This function assigns potential transition times but not the states.
-
-    Parameters
-    ----------
-    T : nx tree
-        tree
-    node_to_tm : dict
-        maps nodes to times
-    primary_track : Trajectory
-        current state of the track
-    diameter : int
-        directed unweighted diameter of the primary transition rate matrix
-
-    """
-    for edge in T.edges():
-        va, vb = edge
-        edge_tma = node_to_tm[va]
-        edge_tmb = node_to_tm[vb]
-        blen = edge_tmb - edge_tma
-        events = []
-        if blen:
-            times = edge_tma + blen * np.random.uniform(
-                    low=1/3, high=2/3, size=diameter-1)
-            events = [Event(track=primary_track, tm=tm) for tm in times]
-        primary_track.events[edge] = events
 
 
 ###############################################################################
@@ -330,9 +259,9 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
     #k = 800
-    #k = 400
+    k = 400
     #k = 200
-    k = 80
+    #k = 80
     nsamples = k * k
     burnin = nsamples // 10
     ncounted = 0

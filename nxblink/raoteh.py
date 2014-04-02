@@ -6,6 +6,7 @@ from __future__ import division, print_function, absolute_import
 
 from functools import partial
 
+import numpy as np
 import networkx as nx
 
 import nxmctree
@@ -16,6 +17,77 @@ from .util import (
         set_or_confirm_history_state, get_total_rates, get_omega,
         get_uniformized_P_nx)
 from .navigation import MetaNode, gen_meta_segments
+from .trajectory import Event
+
+
+def init_blink_history(T, track):
+    """
+    Initial blink history is True where consistent with the data.
+
+    This defines the blink states at nodes of the tree T.
+
+    """
+    for v in T:
+        if True in track.data[v]:
+            blink_state = True
+        else:
+            blink_state = False
+        track.history[v] = blink_state
+
+
+def init_complete_blink_events(T, node_to_tm, track):
+    """
+    Add actual blink transitions near each end of the edge.
+
+    These events are designed so that in the middle 2/3 of each edge
+    every primary state is tolerated according to the blinking process.
+
+    """
+    for edge in T.edges():
+        va, vb = edge
+        sa = track.history[va]
+        sb = track.history[vb]
+        edge_tma = node_to_tm[va]
+        edge_tmb = node_to_tm[vb]
+        blen = edge_tmb - edge_tma
+        events = []
+        if blen:
+            if not sa:
+                tma = edge_tma + blen * np.random.uniform(0, 1/3)
+                events.append(Event(track=track, tm=tma, sa=sa, sb=True))
+            if not sb:
+                tmb = edge_tma + blen * np.random.uniform(2/3, 1)
+                events.append(Event(track=track, tm=tmb, sa=True, sb=sb))
+        track.events[edge] = events
+
+
+def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
+    """
+    This function assigns potential transition times but not the states.
+
+    Parameters
+    ----------
+    T : nx tree
+        tree
+    node_to_tm : dict
+        maps nodes to times
+    primary_track : Trajectory
+        current state of the track
+    diameter : int
+        directed unweighted diameter of the primary transition rate matrix
+
+    """
+    for edge in T.edges():
+        va, vb = edge
+        edge_tma = node_to_tm[va]
+        edge_tmb = node_to_tm[vb]
+        blen = edge_tmb - edge_tma
+        events = []
+        if blen:
+            times = edge_tma + blen * np.random.uniform(
+                    low=1/3, high=2/3, size=diameter-1)
+            events = [Event(track=primary_track, tm=tm) for tm in times]
+        primary_track.events[edge] = events
 
 
 def get_node_to_meta(T, root, node_to_tm, fg_track):
