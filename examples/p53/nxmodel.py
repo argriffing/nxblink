@@ -8,9 +8,11 @@ and which cannot be generalized across all blinking models.
 """
 from __future__ import division, print_function, absolute_import
 
+from StringIO import StringIO
+
 import networkx as nx
 
-import create_mg94
+from create_mg94 import create_mg94
 import app_helper
 
 
@@ -74,6 +76,9 @@ def _tree_helper(tree, root):
     for va, vb in nx.bfs_edges(tree, root):
         T.add_edge(va, vb)
         edge_to_blen[va, vb] = tree[va][vb]['weight']
+        #XXX add a bit to each branch length to avoid dividing by zero
+        #XXX fix this later by combining nodes separated by zero distance
+        edge_to_blen[va, vb] += 1e-4
     return T, root, edge_to_blen
 
 
@@ -103,7 +108,7 @@ def get_primary_to_tol():
     genetic_code = _get_genetic_code()
     ret = _get_jeff_params_e()
     kappa, omega, A, C, T, G, rho, tree, root, leaf_name_pairs = ret
-    info = create_mg94.create_mg94(
+    info = create_mg94(
             A, C, G, T,
             kappa, omega, genetic_code,
             target_expected_rate=1.0)

@@ -20,6 +20,13 @@ import numpy as np
 import create_mg94
 import app_helper
 
+import nxblink
+from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
+from nxblink.util import get_node_to_tm
+from nxblink.raoteh import blinking_model_rao_teh
+from nxblink.navigation import gen_segments
+from nxblink.trajectory import Trajectory
+
 from nxmodel import (
         get_Q_primary_and_distn, get_primary_to_tol, get_tree_info)
 
@@ -310,7 +317,8 @@ def toy_run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     #k = 800
     #k = 400
     #k = 200
-    k = 80
+    #k = 80
+    k = 10
     nsamples = k * k
     burnin = nsamples // 10
     ncounted = 0
@@ -343,9 +351,9 @@ def toy_run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
                     va_vb_type_to_count[va, vb, 'syn'] += 1
                 else:
                     va_vb_type_to_count[va, vb, 'non'] += 1
-        dwell_off, dwell_on = get_blink_dwell_times(T, node_to_tm, tol_tracks)
-        total_dwell_off += dwell_off
-        total_dwell_on += dwell_on
+        #dwell_off, dwell_on = get_blink_dwell_times(T, node_to_tm, tol_tracks)
+        #total_dwell_off += dwell_off
+        #total_dwell_on += dwell_on
         # Loop control.
         ncounted += 1
         if ncounted == nsamples:
@@ -357,8 +365,8 @@ def toy_run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     for va_vb_type, count in sorted(va_vb_type_to_count.items()):
         va, vb, s = va_vb_type
         print(va, '->', vb, s, ':', count / nsamples)
-    print('dwell off:', total_dwell_off / nsamples)
-    print('dwell on :', total_dwell_on / nsamples)
+    #print('dwell off:', total_dwell_off / nsamples)
+    #print('dwell on :', total_dwell_on / nsamples)
 
 
 def main(args):
@@ -445,6 +453,10 @@ def main(args):
     ###########################################################################
     # Analyze some codon columns.
 
+    with open('universal.code.txt') as fin:
+        genetic_code = app_helper.read_genetic_code(fin)
+    codon_to_state = dict((c, s) for s, r, c in genetic_code)
+
     for i, codon_column in enumerate(selected_codon_columns):
         pos = i + 1
 
@@ -465,64 +477,128 @@ def main(args):
                         'but residue %s at position %s '
                         'was found to be neither' % (r, pos))
 
-        # TODO under construction
-        data = {}
-
-        # add the primary node_to_fset constraints implied by data
-
-        # add the tolerance node_to_fset constraints implied by data
-
-
-        # Define the map from node to allowed compound states.
-        node_to_allowed_states = dict((n, set(compound_states)) for n in tree)
+        # add the primary node_to_fset constraints implied by the alignment
+        primary_map = {}
+        primary_map['PRIMARY'] = {}
+        all_primary_states = set(primary_distn)
+        for v in T:
+            primary_map['PRIMARY'][v] = all_primary_states
         for name, codon in zip(names, codon_column):
             leaf = name_to_leaf[name]
-            codon = codon.upper()
-            codon_state = codon_to_state[codon]
-            node_to_allowed_states[leaf] = {codon_state, nstates + codon_state}
+            primary_map['PRIMARY'][leaf] = {codon_to_state[codon]}
 
+        # add the tolerance node_to_fset constraints implied by the alignment
+        tolerance_map = {}
+        all_parts = set(primary_to_tol.values())
+        for part in all_parts:
+            tolerance_map[part] = {}
+            for v in T:
+                tolerance_map[part][v] = {False, True}
+            for name, codon in zip(names, codon_column):
+                leaf = name_to_leaf[name]
+                primary_state = codon_to_state[codon]
+                observed_part = primary_to_tol[primary_state]
+                if part == observed_part:
+                    tolerance_map[part][leaf] = {True}
+                else:
+                    tolerance_map[part][leaf] = {False, True}
 
-    #TODO old stuff after here, kept for data format reference
+        # adjust the tolerance constraints using disease data
+        for primary_state in benign_states:
+            part = primary_to_tol[primary_state]
+            tolerance_map[part][leaf] = {True}
+        for primary_state in lethal_states:
+            part = primary_to_tol[primary_state]
+            tolerance_map[part][leaf] = {False}
 
-    # No data.
-    print ('expectations given no alignment or disease data')
-    print()
-    data = {
-            'PRIMARY' : {
-                'N0' : {0, 1, 2, 3, 4, 5},
-                'N1' : {0, 1, 2, 3, 4, 5},
-                'N2' : {0, 1, 2, 3, 4, 5},
-                'N3' : {0, 1, 2, 3, 4, 5},
-                'N4' : {0, 1, 2, 3, 4, 5},
-                'N5' : {0, 1, 2, 3, 4, 5},
-                },
-            'T0' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            'T1' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            'T2' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            }
-    run(primary_to_tol, interaction_map, data)
-    print()
+        # update the data including both the primary and tolerance constraints
+        data = {}
+        data.update(primary_map)
+        data.update(tolerance_map)
+
+        # run the analysis for the column
+        #run(primary_to_tol, interaction_map, data)
+        #print()
+
+        track_to_node_to_data_fset = data
+
+        # Define primary trajectory.
+        primary_track = Trajectory(
+                name='PRIMARY', data=track_to_node_to_data_fset['PRIMARY'],
+                history=dict(), events=dict(),
+                prior_root_distn=primary_distn, Q_nx=Q_primary,
+                uniformization_factor=uniformization_factor)
+
+        # Define tolerance process trajectories.
+        tolerance_tracks = []
+        for name in all_parts:
+            track = Trajectory(
+                    name=name, data=track_to_node_to_data_fset[name],
+                    history=dict(), events=dict(),
+                    prior_root_distn=blink_distn, Q_nx=Q_blink,
+                    uniformization_factor=uniformization_factor)
+            tolerance_tracks.append(track)
+
+        # sample correlated trajectories using rao teh on the blinking model
+        va_vb_type_to_count = defaultdict(int)
+        #k = 800
+        #k = 400
+        #k = 200
+        #k = 80
+        k = 10
+        nsamples = k * k
+        burnin = nsamples // 10
+        ncounted = 0
+        total_dwell_off = 0
+        total_dwell_on = 0
+        for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
+                T, root, node_to_tm,
+                Q_primary, Q_blink, Q_meta,
+                primary_track, tolerance_tracks, interaction_map)):
+            nsampled = i+1
+            print(nsampled)
+            if nsampled < burnin:
+                continue
+            # Summarize the trajectories.
+            for edge in T.edges():
+                va, vb = edge
+                for track in tol_tracks:
+                    for ev in track.events[edge]:
+                        transition = (ev.sa, ev.sb)
+                        if ev.sa == ev.sb:
+                            raise Exception(
+                                    'self-transitions should not remain')
+                        if transition == (False, True):
+                            va_vb_type_to_count[va, vb, 'on'] += 1
+                        elif transition == (True, False):
+                            va_vb_type_to_count[va, vb, 'off'] += 1
+                for ev in pri_track.events[edge]:
+                    transition = (ev.sa, ev.sb)
+                    if ev.sa == ev.sb:
+                        raise Exception(
+                                'self-transitions should not remain')
+                    if primary_to_tol[ev.sa] == primary_to_tol[ev.sb]:
+                        va_vb_type_to_count[va, vb, 'syn'] += 1
+                    else:
+                        va_vb_type_to_count[va, vb, 'non'] += 1
+            #dwell_off, dwell_on = get_blink_dwell_times(
+                    #T, node_to_tm, tol_tracks)
+            #total_dwell_off += dwell_off
+            #total_dwell_on += dwell_on
+            # Loop control.
+            ncounted += 1
+            if ncounted == nsamples:
+                break
+
+        # report infos
+        print('burnin:', burnin)
+        print('samples after burnin:', nsamples)
+        for va_vb_type, count in sorted(va_vb_type_to_count.items()):
+            va, vb, s = va_vb_type
+            print(va, '->', vb, s, ':', count / nsamples)
+        #print('dwell off:', total_dwell_off / nsamples)
+        #print('dwell on :', total_dwell_on / nsamples)
+        print()
 
 
 if __name__ == '__main__':

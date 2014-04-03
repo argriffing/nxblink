@@ -38,14 +38,7 @@ from nxmctree.sampling import sample_history
 import nxblink
 from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
-from nxblink.raoteh import (
-        init_blink_history,
-        init_complete_blink_events,
-        init_incomplete_primary_events,
-        sample_blink_transitions,
-        sample_primary_transitions,
-        resample_using_meta_node_tree,
-        blinking_model_rao_teh)
+from nxblink.raoteh import blinking_model_rao_teh
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
 

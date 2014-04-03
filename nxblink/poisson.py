@@ -105,7 +105,10 @@ def sample_primary_poisson_events(edge, node_to_tm,
 
         # Compute the poisson rate.
         fg_state = track_to_state[fg_track.name]
-        poisson_rate = local_omega - local_rates[fg_state]
+        if fg_state in local_rates:
+            poisson_rate = local_omega - local_rates[fg_state]
+        else:
+            poisson_rate = local_omega
 
         # Sample some poisson events on the segment.
         segment_events = _poisson_helper(fg_track, poisson_rate, tma, tmb)
