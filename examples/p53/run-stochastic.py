@@ -28,44 +28,7 @@ BENIGN = 'BENIGN'
 LETHAL = 'LETHAL'
 UNKNOWN = 'UNKNOWN'
 
-#TODO unfinished
 
-
-
-
-def get_jeff_params_e():
-    """
-    Added early December 2013 in response to email from Jeff.
-    Use these to compute a log likelihood and per-branch
-    expected switching counts (equivalently probabilities because
-    at most one switch is allowed per branch).
-    The log likelihood should be summed over all p53 codon sites
-    and the expected switching counts should be averaged
-    over all codon sites.
-    """
-
-    # FINAL ESTIMATE: rho12 =    0.61610
-    # FINAL ESTIMATE: for frequency of purines is    0.50862
-    # FINAL ESTIMATE: for freq. of A among purines is    0.49373
-    # FINAL ESTIMATE: for freq. of T among pyrimidines is    0.38884
-    # FINAL ESTIMATE: kappa =    3.38714
-    # FINAL ESTIMATE: omega =    0.37767
-
-    rho = 0.61610
-    AG = 0.50862
-    CT = 1 - AG
-    A = AG * 0.49373
-    G = AG - A
-    T = CT * 0.38884
-    C = CT - T
-    kappa = 3.38714
-    omega = 0.37767
-
-    tree_string = """((((((Has:  0.0073385245,Ptr:  0.0073385245):  0.0640509640,Ppy:  0.0713894884):  0.0542000118,(((Mmu:  0.0025462071,Mfu:  0.0025462071):  0.0000000000,Mfa:  0.0025462071):  0.0318638454,Cae:  0.0344100525):  0.0911794477):  0.1983006745,(Mim:  0.3238901743,Tgl:  0.3238901743):  0.0000000004):  0.2277808059,((((((Mum:  0.1797319785,Rno:  0.1797319785):  0.1566592047,Mun:  0.3363911832):  0.0192333544,(Cgr:  0.1074213106,Mau:  0.1074213106):  0.2482032271):  0.0447054051,Sju:  0.4003299428):  0.1000000288,(Cpo:  0.4170856630,Mmo:  0.4170856630):  0.0832443086):  0.0250358682,(Ocu:  0.4149196099,Opr:  0.4149196099):  0.1104462299):  0.0263051408):  0.0000000147,(Sar:  0.4524627987,((Fca:  0.2801000848,Cfa:  0.2801000848):  0.1338023902,((Bta:  0.0880000138,Oar:  0.0880000138):  0.1543496707,Dle:  0.2423496845):  0.1715527905):  0.0385603236):  0.0992081966);"""
-    fin = StringIO(tree_string)
-    tree, root, leaf_name_pairs = app_helper.read_newick(fin)
-    return (kappa, omega, A, C, T, G, rho,
-            tree, root, leaf_name_pairs)
 
 
 def main(args):
@@ -278,6 +241,216 @@ def main(args):
 
 
 
+
+
+def toy_run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
+
+    # Get the rooted directed tree shape.
+    T, root = get_T_and_root()
+
+    # Get the map from ordered tree edge to branch length.
+    # The branch length has complicated units.
+    # It is the expected number of primary process transitions
+    # along the branch conditional on all tolerance classes being tolerated.
+    edge_to_blen = get_edge_to_blen()
+    node_to_tm = get_node_to_tm(T, root, edge_to_blen)
+
+    # Define the uniformization factor.
+    uniformization_factor = 2
+
+    # Define the primary rate matrix.
+    Q_primary = get_Q_primary()
+
+    # Define the prior primary state distribution.
+    #TODO do not use hardcoded uniform distribution
+    nprimary = 6
+    primary_distn = dict((s, 1/nprimary) for s in range(nprimary))
+
+    # Normalize the primary rate matrix to have expected rate 1.
+    expected_primary_rate = 0
+    for sa, sb in Q_primary.edges():
+        p = primary_distn[sa]
+        rate = Q_primary[sa][sb]['weight']
+        expected_primary_rate += p * rate
+    #
+    #print('pure primary process expected rate:')
+    #print(expected_primary_rate)
+    #print()
+    #
+    for sa, sb in Q_primary.edges():
+        Q_primary[sa][sb]['weight'] /= expected_primary_rate
+
+    # Define primary trajectory.
+    primary_track = Trajectory(
+            name='PRIMARY', data=track_to_node_to_data_fset['PRIMARY'],
+            history=dict(), events=dict(),
+            prior_root_distn=primary_distn, Q_nx=Q_primary,
+            uniformization_factor=uniformization_factor)
+
+    # Define the rate matrix for a single blinking trajectory.
+    Q_blink = get_Q_blink(rate_on=RATE_ON, rate_off=RATE_OFF)
+
+    # Define the prior blink state distribution.
+    blink_distn = {False : P_OFF, True : P_ON}
+
+    Q_meta = get_Q_meta(Q_primary, primary_to_tol)
+
+    # Define tolerance process trajectories.
+    tolerance_tracks = []
+    for name in ('T0', 'T1', 'T2'):
+        track = Trajectory(
+                name=name, data=track_to_node_to_data_fset[name],
+                history=dict(), events=dict(),
+                prior_root_distn=blink_distn, Q_nx=Q_blink,
+                uniformization_factor=uniformization_factor)
+        tolerance_tracks.append(track)
+
+    # sample correlated trajectories using rao teh on the blinking model
+    va_vb_type_to_count = defaultdict(int)
+    #k = 800
+    #k = 400
+    #k = 200
+    k = 80
+    nsamples = k * k
+    burnin = nsamples // 10
+    ncounted = 0
+    total_dwell_off = 0
+    total_dwell_on = 0
+    for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
+            T, root, node_to_tm,
+            Q_primary, Q_blink, Q_meta,
+            primary_track, tolerance_tracks, interaction_map)):
+        nsampled = i+1
+        if nsampled < burnin:
+            continue
+        # Summarize the trajectories.
+        for edge in T.edges():
+            va, vb = edge
+            for track in tol_tracks:
+                for ev in track.events[edge]:
+                    transition = (ev.sa, ev.sb)
+                    if ev.sa == ev.sb:
+                        raise Exception('self-transitions should not remain')
+                    if transition == (False, True):
+                        va_vb_type_to_count[va, vb, 'on'] += 1
+                    elif transition == (True, False):
+                        va_vb_type_to_count[va, vb, 'off'] += 1
+            for ev in pri_track.events[edge]:
+                transition = (ev.sa, ev.sb)
+                if ev.sa == ev.sb:
+                    raise Exception('self-transitions should not remain')
+                if primary_to_tol[ev.sa] == primary_to_tol[ev.sb]:
+                    va_vb_type_to_count[va, vb, 'syn'] += 1
+                else:
+                    va_vb_type_to_count[va, vb, 'non'] += 1
+        dwell_off, dwell_on = get_blink_dwell_times(T, node_to_tm, tol_tracks)
+        total_dwell_off += dwell_off
+        total_dwell_on += dwell_on
+        # Loop control.
+        ncounted += 1
+        if ncounted == nsamples:
+            break
+
+    # report infos
+    print('burnin:', burnin)
+    print('samples after burnin:', nsamples)
+    for va_vb_type, count in sorted(va_vb_type_to_count.items()):
+        va, vb, s = va_vb_type
+        print(va, '->', vb, s, ':', count / nsamples)
+    print('dwell off:', total_dwell_off / nsamples)
+    print('dwell on :', total_dwell_on / nsamples)
+
+
+def main(args):
+    """
+
+    """
+    # Specify the model, the tree shape, and the branch lengths.
+    primary_to_tol = get_primary_to_tol()
+    Q_primary = get_Q_primary()
+    T, root = get_T_and_root()
+    edge_to_blen = get_edge_to_blen()
+
+    # Convert a model specification to an interaction map for convenience.
+    # This is a reformulation of the interactions between the primary
+    # process track and the tolerance process tracks.
+    interaction_map = get_interaction_map(primary_to_tol)
+
+    # Read the data.
+
+    # Read the alignment.
+    print('reading the alignment...')
+    with open('testseq') as fin:
+        name_codons_list = list(app_helper.read_phylip(fin))
+
+    # Read the interpreted disease data.
+    with open(args.disease) as fin:
+        interpreted_disease_data = app_helper.read_interpreted_disease_data(fin)
+    pos_to_benign_residues = defaultdict(set)
+    pos_to_lethal_residues = defaultdict(set)
+    for pos, residue, status in interpreted_disease_data:
+        if status == BENIGN:
+            pos_to_benign_residues[pos].add(residue)
+        elif status == LETHAL:
+            pos_to_lethal_residues[pos].add(residue)
+        elif status == UNKNOWN:
+            raise NotImplementedError(
+                    'unknown amino acid status in the reference process '
+                    'requires integrating over too many things')
+        else:
+            raise Exception('invalid disease status: ' + str(status))
+    pos_to_benign_residues = dict(pos_to_benign_residues)
+    pos_to_lethal_residues = dict(pos_to_lethal_residues)
+
+    #TODO under construction after here
+
+    # compute the log likelihood, column by column
+    # using _mjp_dense (the dense Markov jump process module).
+    print('preparing to compute log likelihood...')
+    names, codon_sequences = zip(*name_codons_list)
+    codon_columns = zip(*codon_sequences)
+
+    # No data.
+    print ('expectations given no alignment or disease data')
+    print()
+    data = {
+            'PRIMARY' : {
+                'N0' : {0, 1, 2, 3, 4, 5},
+                'N1' : {0, 1, 2, 3, 4, 5},
+                'N2' : {0, 1, 2, 3, 4, 5},
+                'N3' : {0, 1, 2, 3, 4, 5},
+                'N4' : {0, 1, 2, 3, 4, 5},
+                'N5' : {0, 1, 2, 3, 4, 5},
+                },
+            'T0' : {
+                'N0' : {False, True},
+                'N1' : {False, True},
+                'N2' : {False, True},
+                'N3' : {False, True},
+                'N4' : {False, True},
+                'N5' : {False, True},
+                },
+            'T1' : {
+                'N0' : {False, True},
+                'N1' : {False, True},
+                'N2' : {False, True},
+                'N3' : {False, True},
+                'N4' : {False, True},
+                'N5' : {False, True},
+                },
+            'T2' : {
+                'N0' : {False, True},
+                'N1' : {False, True},
+                'N2' : {False, True},
+                'N3' : {False, True},
+                'N4' : {False, True},
+                'N5' : {False, True},
+                },
+            }
+    run(primary_to_tol, interaction_map, data)
+    print()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--verbose', action='store_true')
@@ -285,15 +458,5 @@ if __name__ == '__main__':
             help='limit the number of summarized columns')
     parser.add_argument('--disease', required=True,
             help='csv file with filtered disease data')
-    #parser.add_argument('--dt', type=float,
-            #help='discretize the tree with this maximum branchlet length')
-    #parser.add_argument('--prior-switch-tsv-out',
-            #default='prior.switch.data.tsv',
-            #help='write prior per-branch switching probabilities '
-                #'to this file')
-    #parser.add_argument('--posterior-switch-tsv-out',
-            #default='posterior.switch.data.tsv',
-            #help='write posterior per-site per-branch switching probabilities '
-                #'to this file')
     main(parser.parse_args())
 
