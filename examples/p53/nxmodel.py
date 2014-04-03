@@ -16,7 +16,7 @@ import app_helper
 
 __all__ = [
         'get_Q_primary', 'get_primary_to_tol',
-        'get_T_and_root', 'get_edge_to_blen',
+        'get_tree_info', 'get_edge_to_blen',
         ]
 
 
@@ -77,10 +77,8 @@ def _tree_helper(tree, root):
     return T, root, edge_to_blen
 
 
-def get_Q_primary():
+def get_Q_primary_and_distn():
     """
-    This is like a symmetric codon rate matrix that is not normalized.
-
     """
     # Get the parameters inferred according to the project with Jeff and Liwen.
     genetic_code = _get_genetic_code()
@@ -90,7 +88,7 @@ def get_Q_primary():
             A, C, G, T,
             kappa, omega, genetic_code,
             target_expected_rate=1.0)
-    return Q_primary
+    return Q_primary, primary_distn
 
 
 def get_primary_to_tol():
@@ -115,16 +113,10 @@ def get_primary_to_tol():
     return primary_to_part
 
 
-def get_T_and_root():
+def get_tree_info():
     ret = _get_jeff_params_e()
     kappa, omega, A, C, T, G, rho, tree, root, leaf_name_pairs = ret
     tree, root, edge_to_blen = _tree_helper(tree, root)
-    return tree, root
-
-
-def get_edge_to_blen():
-    ret = _get_jeff_params_e()
-    kappa, omega, A, C, T, G, rho, tree, root, leaf_name_pairs = ret
-    tree, root, edge_to_blen = _tree_helper(tree, root)
-    return edge_to_blen
+    name_to_leaf = dict((name, leaf) for leaf, name in leaf_name_pairs)
+    return tree, root, edge_to_blen, name_to_leaf
 

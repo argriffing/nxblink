@@ -21,7 +21,7 @@ import create_mg94
 import app_helper
 
 from nxmodel import (
-        get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
+        get_Q_primary_and_distn, get_primary_to_tol, get_tree_info)
 
 
 BENIGN = 'BENIGN'
@@ -31,7 +31,7 @@ UNKNOWN = 'UNKNOWN'
 
 
 
-def main(args):
+def old_main(args):
 
     # Pick some parameters.
     info = get_jeff_params_e()
@@ -365,18 +365,46 @@ def main(args):
     """
 
     """
-    # Specify the model, the tree shape, and the branch lengths.
+    ###########################################################################
+    # Model specification and conversion.
+
+    # Specify the model.
+    # Define the rate matrix for a single blinking trajectory,
+    # and the prior blink state distribution.
+    RATE_ON = 1.0
+    RATE_OFF = 1.0
+    P_ON = RATE_ON / (RATE_ON + RATE_OFF)
+    P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)
     primary_to_tol = get_primary_to_tol()
-    Q_primary = get_Q_primary()
-    T, root = get_T_and_root()
-    edge_to_blen = get_edge_to_blen()
+    Q_primary, primary_distn = get_Q_primary_and_distn()
+    Q_blink = get_Q_blink(rate_on=RATE_ON, rate_off=RATE_OFF)
+    blink_distn = {False : P_OFF, True : P_ON}
+    Q_meta = get_Q_meta(Q_primary, primary_to_tol)
 
     # Convert a model specification to an interaction map for convenience.
     # This is a reformulation of the interactions between the primary
     # process track and the tolerance process tracks.
     interaction_map = get_interaction_map(primary_to_tol)
 
-    # Read the data.
+    ###########################################################################
+    # Tree specification and conversion.
+
+    # Specify the tree shape, the root,
+    # the branch lengths, and the map from leaf name to leaf node.
+    T, root, edge_to_blen, name_to_leaf = get_tree_info()
+    human_leaf = name_to_leaf['Has']
+
+    # Use the tree information to get a map from node to time from the root.
+    node_to_tm = get_node_to_tm(T, root, edge_to_blen)
+
+    ###########################################################################
+    # Rao-Teh parameters.
+
+    # Define the uniformization factor.
+    uniformization_factor = 2
+
+    ###########################################################################
+    # Data specification and conversion.
 
     # Read the alignment.
     print('reading the alignment...')
@@ -402,13 +430,59 @@ def main(args):
     pos_to_benign_residues = dict(pos_to_benign_residues)
     pos_to_lethal_residues = dict(pos_to_lethal_residues)
 
-    #TODO under construction after here
-
-    # compute the log likelihood, column by column
-    # using _mjp_dense (the dense Markov jump process module).
-    print('preparing to compute log likelihood...')
+    # Reformat the alignment data.
     names, codon_sequences = zip(*name_codons_list)
     codon_columns = zip(*codon_sequences)
+
+    # Use command line arguments to get the selected codon columns.
+    # We do this because we might not want to analyze all codon columns,
+    # because analyzing codon columns may be slow.
+    if args.ncols is None:
+        selected_codon_columns = codon_columns
+    else:
+        selected_codon_columns = codon_columns[:args.ncols]
+
+    ###########################################################################
+    # Analyze some codon columns.
+
+    for i, codon_column in enumerate(selected_codon_columns):
+        pos = i + 1
+
+        # Define the column-specific disease states and the benign states.
+        benign_residues = pos_to_benign_residues.get(pos, set())
+        lethal_residues = pos_to_lethal_residues.get(pos, set())
+        benign_states = set()
+        lethal_states = set()
+        for s, r, c in genetic_code:
+            if r in benign_residues:
+                benign_states.add(s)
+            elif r in lethal_residues:
+                lethal_states.add(s)
+            else:
+                raise Exception(
+                        'each amino acid should be considered either '
+                        'benign or lethal in this model, '
+                        'but residue %s at position %s '
+                        'was found to be neither' % (r, pos))
+
+        # TODO under construction
+        data = {}
+
+        # add the primary node_to_fset constraints implied by data
+
+        # add the tolerance node_to_fset constraints implied by data
+
+
+        # Define the map from node to allowed compound states.
+        node_to_allowed_states = dict((n, set(compound_states)) for n in tree)
+        for name, codon in zip(names, codon_column):
+            leaf = name_to_leaf[name]
+            codon = codon.upper()
+            codon_state = codon_to_state[codon]
+            node_to_allowed_states[leaf] = {codon_state, nstates + codon_state}
+
+
+    #TODO old stuff after here, kept for data format reference
 
     # No data.
     print ('expectations given no alignment or disease data')
