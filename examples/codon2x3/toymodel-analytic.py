@@ -275,6 +275,14 @@ def run(primary_to_tol, compound_states, node_to_data_fset):
     node_to_distn = dynamic_fset_lhood.get_node_to_distn(
             T, edge_to_P_nx, root, compound_distn, node_to_data_fset)
     root_distn = node_to_distn[root]
+    print('prior distribution at the root:')
+    for i, p in sorted(compound_distn.items()):
+        print(i, p)
+    print()
+    print('posterior distribution at the root:')
+    for i, p in sorted(root_distn.items()):
+        print(i, p)
+    print()
     root_distn_np = np.zeros(ncompound)
     for i, s in enumerate(compound_states):
         if s in root_distn:
