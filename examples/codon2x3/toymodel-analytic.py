@@ -11,6 +11,7 @@ import networkx as nx
 import numpy as np
 from numpy.testing import assert_allclose
 import scipy.linalg
+from scipy.special import xlogy
 
 from nxmctree import dynamic_fset_lhood
 from nxblink.util import hamming_distance
@@ -166,7 +167,25 @@ def compute_edge_expectation(Q, P, J, indicator, t):
     return total
 
 
+def compute_dwell_times(Q, P, J, indicator, t):
+    # Q is the rate matrix
+    # P is the conditional transition matrix
+    # J is the joint distribution matrix
+    # the indicator is a dense 1d vector
+    ncompound = Q.shape[0]
+    E = np.diag(indicator)
+    interact = scipy.linalg.expm_frechet(Q*t, E*t, compute_expm=False)
+    total = 0
+    for i in range(ncompound):
+        for j in range(ncompound):
+            if J[i, j]:
+                total += J[i, j] * interact[i, j] / P[i, j]
+    return total
+
+
 def run(primary_to_tol, compound_states, node_to_data_fset):
+
+    ncompound = len(compound_states)
 
     # Get the primary rate matrix and convert it to a dense ndarray.
     nprimary = 6
@@ -250,6 +269,17 @@ def run(primary_to_tol, compound_states, node_to_data_fset):
     print(lhood)
     print()
 
+    # Compute the map from node to posterior state distribution.
+    # Convert the dict distribution back into a dense distribution.
+    # This is used in the calculation of expected log likelihood.
+    node_to_distn = dynamic_fset_lhood.get_node_to_distn(
+            T, edge_to_P_nx, root, compound_distn, node_to_data_fset)
+    root_distn = node_to_distn[root]
+    root_distn_np = np.zeros(ncompound)
+    for i, s in enumerate(compound_states):
+        if s in root_distn:
+            root_distn_np[i] = root_distn[s]
+
     # Compute the map from edge to posterior joint state distribution.
     # Convert the nx transition probability matrices back into dense ndarrays.
     edge_to_nxdistn = dynamic_fset_lhood.get_edge_to_nxdistn(
@@ -258,6 +288,18 @@ def run(primary_to_tol, compound_states, node_to_data_fset):
     for edge, J_nx in edge_to_nxdistn.items():
         J_np = nx_to_np(J_nx, compound_states)
         edge_to_J[edge] = J_np
+
+
+    # Initialize contributions to the expected log likelihood.
+    #
+    # Compute the contribution of the initial state distribution.
+    ell_init = xlogy(root_distn_np, compound_distn_np).sum()
+    # Initialize the contribution of the expected transitions.
+    I_all = I_on + I_off + I_syn + I_non
+    I_log_all = xlogy(I_all, Q_compound)
+    ell_trans = 0
+    # Initialize the contribution of the dwell times.
+    ell_dwell = 0
 
     # Compute labeled transition count expectations
     # using the rate matrix, the joint posterior state distribution matrices,
@@ -287,15 +329,34 @@ def run(primary_to_tol, compound_states, node_to_data_fset):
         blink_expectation += off_total
         print('edge %s -> %s on expectation %s' % (va, vb, on_total))
         print('edge %s -> %s off expectation %s' % (va, vb, off_total))
+
+        # Compute expectation of logs of rates of observed transitions.
+        # This is part of the expected log likelihood calculation.
+        contrib = compute_edge_expectation(Q, P, J, I_log_all, t)
+        ell_trans += contrib
+        print('edge %s -> %s ell trans contrib %s' % (va, vb, contrib))
+
+        # Compute sum of expectations of dwell times
+        contrib = compute_dwell_times(Q, P, J, -row_sums, t)
+        ell_dwell += contrib
+        print('edge %s -> %s ell dwell contrib %s' % (va, vb, contrib))
         
         print()
 
-    print('primary expectation:')
+    print('expected count of primary process transitions:')
     print(primary_expectation)
     print()
 
-    print('blink expectation:')
+    print('expected count of blink process transitions:')
     print(blink_expectation)
+    print()
+
+    print('expected log likelihood:')
+    print('contribution of initial state distribution :', ell_init)
+    print('contribution of expected transition counts :', ell_trans)
+    print('contribution of expected dwell times       :', ell_dwell)
+    print('total                                      :', (
+        ell_init + ell_trans + ell_dwell))
     print()
 
 
