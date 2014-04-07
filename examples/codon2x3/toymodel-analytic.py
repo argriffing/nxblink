@@ -4,6 +4,8 @@ This toy model is described in raoteh/examples/codon2x3.
 """
 from __future__ import division, print_function, absolute_import
 
+import argparse
+
 import networkx as nx
 import numpy as np
 from numpy.testing import assert_allclose
@@ -11,9 +13,9 @@ import scipy.linalg
 from scipy.special import xlogy
 
 from nxmctree import dynamic_fset_lhood
-from nxblink.util import hamming_distance
+from nxblink.compound import State, compound_state_is_ok, get_Q_compound
 from nxblink.denseutil import (
-        State, compound_state_is_ok, get_compound_states,
+        get_compound_states,
         define_compound_process, get_expected_rate, nx_to_np,
         nx_to_np_rate_matrix, np_to_nx_transition_matrix,
         compute_edge_expectation, compute_dwell_times)
@@ -22,58 +24,7 @@ import nxmodel
 import nxmodelb
 
 
-#TODO move this into the nxblink package, maybe to a new module compound.py
-def get_Q_compound(
-        Q_primary, on_rate, off_rate, primary_to_tol, compound_states):
-    """
-    Get a compound state rate matrix as a networkx Digraph.
-
-    This is only for testing, because realistically sized processes
-    will have combinatorially large compound state spaces.
-
-    """
-    Q_compound = nx.DiGraph()
-    for i, sa in enumerate(compound_states):
-
-        # skip compound states that have zero probability
-        if not compound_state_is_ok(primary_to_tol, sa):
-            continue
-
-        for j, sb in enumerate(compound_states):
-
-            # skip compound states that have zero probability
-            if not compound_state_is_ok(primary_to_tol, sb):
-                continue
-
-            # if hamming distance between compound states is not 1 then skip
-            if hamming_distance(sa, sb) != 1:
-                continue
-
-            # if a primary transition is not allowed then skip
-            if sa.P != sb.P and not Q_primary.has_edge(sa.P, sb.P):
-                continue
-
-            # add the primary transition or tolerance transition
-            if sa.P != sb.P:
-                rate = Q_primary[sa.P][sb.P]['weight']
-                if primary_to_tol[sa.P] == primary_to_tol[sb.P]:
-                    # synonymous primary process transition
-                    Q_compound.add_edge(sa, sb, weight=rate)
-                else:
-                    # non-synonymous primary process transition
-                    Q_compound.add_edge(sa, sb, weight=rate)
-            else:
-                diff = sum(sb) - sum(sa)
-                if diff == 1:
-                    Q_compound.add_edge(sa, sb, weight=on_rate)
-                elif diff == -1:
-                    Q_compound.add_edge(sa, sb, weight=off_rate)
-                else:
-                    raise Exception
-    return Q_compound
-
-
-def run(model, primary_to_tol, compound_states, node_to_data_fset):
+def run(model, compound_states, node_to_data_fset):
     """
 
     Parameters
@@ -82,7 +33,10 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
         a module with hardcoded information about the model
 
     """
+    # Get the analog of the genetic code.
+    primary_to_tol = model.get_primary_to_tol()
 
+    # Get the number of compound states.
     ncompound = len(compound_states)
 
     # Get the prior blink state distribution.
@@ -108,7 +62,6 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
     for sa, sb in Q_primary_nx.edges():
         Q_primary_nx[sa][sb]['weight'] /= expected_primary_rate
 
-
     # Get the rooted directed tree shape.
     T, root = model.get_T_and_root()
 
@@ -118,21 +71,16 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
     # along the branch conditional on all tolerance classes being tolerated.
     edge_to_blen = model.get_edge_to_blen()
 
-    # Define the compound process through some indicators.
+    # Define some indicators for the compound process
     indicators = define_compound_process(
             Q_primary_nx, compound_states, primary_to_tol)
     I_syn, I_non, I_on, I_off = indicators
 
-    # Define the dense compound transition rate matrix through the indicators.
+    # Define the dense compound transition rate matrix
     on_rate = model.get_rate_on()
     off_rate = model.get_rate_off()
     Q_compound_nx = get_Q_compound(
             Q_primary_nx, on_rate, off_rate, primary_to_tol, compound_states)
-    #Q_compound = (
-            #syn_rate * I_syn / expected_primary_rate +
-            #non_rate * I_non / expected_primary_rate +
-            #on_rate * I_on +
-            #off_rate * I_off)
     Q_compound = nx_to_np(Q_compound_nx, compound_states)
     row_sums = np.sum(Q_compound, axis=1)
     Q_compound = Q_compound - np.diag(row_sums)
@@ -150,10 +98,6 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
             compound_distn[state] = p
     total = sum(compound_distn.values())
     assert_allclose(total, 1)
-    #compound_distn = dict((k, v/total) for k, v in compound_distn.items())
-    #print('compound distn:')
-    #print(compound_distn)
-    #print()
 
     # Convert the compound state distribution to a dense array.
     # Check that the distribution is at equilibrium.
@@ -280,108 +224,117 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
 
 
 
-def main():
+def main(args):
+    """
 
-    #model = nxmodelb
-    model = nxmodel
-
-    # Get the analog of the genetic code.
-    primary_to_tol = model.get_primary_to_tol()
+    """
+    # define the model
+    if args.model == 'nxmodel':
+        model = nxmodel
+    elif args.model == 'nxmodelb':
+        model = nxmodelb
+    else:
+        raise Exception
 
     # Define the ordering of the compound states.
     compound_states = get_compound_states()
 
-    # No data.
-    print ('expectations given no alignment or disease data')
-    print()
-    node_to_data_fset = {
-            'N0' : set(compound_states),
-            'N1' : set(compound_states),
-            'N2' : set(compound_states),
-            'N3' : set(compound_states),
-            'N4' : set(compound_states),
-            'N5' : set(compound_states),
-            }
-    run(model, primary_to_tol, compound_states, node_to_data_fset)
-    print()
+    # Define the data according to the command line selection.
+    if args.data == 0:
+        # No data.
+        node_to_data_fset = {
+                'N0' : set(compound_states),
+                'N1' : set(compound_states),
+                'N2' : set(compound_states),
+                'N3' : set(compound_states),
+                'N4' : set(compound_states),
+                'N5' : set(compound_states),
+                }
+    elif args.data == 1:
+        # Alignment data only.
+        node_to_data_fset = {
+                'N0' : {
+                    State(0, 1, 0, 0),
+                    State(0, 1, 0, 1),
+                    State(0, 1, 1, 0),
+                    State(0, 1, 1, 1)},
+                'N1' : set(compound_states),
+                'N2' : set(compound_states),
+                'N3' : {
+                    State(4, 0, 0, 1),
+                    State(4, 0, 1, 1),
+                    State(4, 1, 0, 1),
+                    State(4, 1, 1, 1)},
+                'N4' : {
+                    State(5, 0, 0, 1),
+                    State(5, 0, 1, 1),
+                    State(5, 1, 0, 1),
+                    State(5, 1, 1, 1)},
+                'N5' : {
+                    State(1, 1, 0, 0),
+                    State(1, 1, 0, 1),
+                    State(1, 1, 1, 0),
+                    State(1, 1, 1, 1)},
+                }
+    elif args.data == 2:
+        # Alignment and disease data.
+        node_to_data_fset = {
+                'N0' : {
+                    State(0, 1, 0, 1)},
+                'N1' : set(compound_states),
+                'N2' : set(compound_states),
+                'N3' : {
+                    State(4, 0, 0, 1),
+                    State(4, 0, 1, 1),
+                    State(4, 1, 0, 1),
+                    State(4, 1, 1, 1)},
+                'N4' : {
+                    State(5, 0, 0, 1),
+                    State(5, 0, 1, 1),
+                    State(5, 1, 0, 1),
+                    State(5, 1, 1, 1)},
+                'N5' : {
+                    State(1, 1, 0, 0),
+                    State(1, 1, 0, 1),
+                    State(1, 1, 1, 0),
+                    State(1, 1, 1, 1)},
+                }
+    elif args.data == 3:
+        # Alignment and fully observed disease data.
+        node_to_data_fset = {
+                'N0' : {
+                    State(0, 1, 0, 1)},
+                'N1' : set(compound_states),
+                'N2' : set(compound_states),
+                'N3' : {
+                    State(4, 1, 1, 1)},
+                'N4' : {
+                    State(5, 1, 1, 1)},
+                'N5' : {
+                    State(1, 1, 1, 1)},
+                }
+    else:
+        raise Exception
 
-    # Alignment data only.
-    print ('expectations given only alignment data but not disease data')
-    print()
-    node_to_data_fset = {
-            'N0' : {
-                State(0, 1, 0, 0),
-                State(0, 1, 0, 1),
-                State(0, 1, 1, 0),
-                State(0, 1, 1, 1)},
-            'N1' : set(compound_states),
-            'N2' : set(compound_states),
-            'N3' : {
-                State(4, 0, 0, 1),
-                State(4, 0, 1, 1),
-                State(4, 1, 0, 1),
-                State(4, 1, 1, 1)},
-            'N4' : {
-                State(5, 0, 0, 1),
-                State(5, 0, 1, 1),
-                State(5, 1, 0, 1),
-                State(5, 1, 1, 1)},
-            'N5' : {
-                State(1, 1, 0, 0),
-                State(1, 1, 0, 1),
-                State(1, 1, 1, 0),
-                State(1, 1, 1, 1)},
-            }
-    run(model, primary_to_tol, compound_states, node_to_data_fset)
-    print()
-
-    # Alignment and disease data.
-    print ('expectations given alignment and disease data')
-    print()
-    node_to_data_fset = {
-            'N0' : {
-                State(0, 1, 0, 1)},
-            'N1' : set(compound_states),
-            'N2' : set(compound_states),
-            'N3' : {
-                State(4, 0, 0, 1),
-                State(4, 0, 1, 1),
-                State(4, 1, 0, 1),
-                State(4, 1, 1, 1)},
-            'N4' : {
-                State(5, 0, 0, 1),
-                State(5, 0, 1, 1),
-                State(5, 1, 0, 1),
-                State(5, 1, 1, 1)},
-            'N5' : {
-                State(1, 1, 0, 0),
-                State(1, 1, 0, 1),
-                State(1, 1, 1, 0),
-                State(1, 1, 1, 1)},
-            }
-    run(model, primary_to_tol, compound_states, node_to_data_fset)
-    print()
-
-    # Alignment and fully observed disease data.
-    print ('expectations given alignment and fully observed disease data')
-    print ('(all leaf disease states which were previously considered to be')
-    print ('unobserved are now considered to be tolerated (blinked on))')
-    print()
-    node_to_data_fset = {
-            'N0' : {
-                State(0, 1, 0, 1)},
-            'N1' : set(compound_states),
-            'N2' : set(compound_states),
-            'N3' : {
-                State(4, 1, 1, 1)},
-            'N4' : {
-                State(5, 1, 1, 1)},
-            'N5' : {
-                State(1, 1, 1, 1)},
-            }
-    run(model, primary_to_tol, compound_states, node_to_data_fset)
+    # run the analysis
+    run(model, compound_states, node_to_data_fset)
     print()
 
 
-main()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model',
+            choices=('nxmodel', 'nxmodelb'), default='nxmodel',
+            help='specify the model complexity')
+    parser.add_argument('--data',
+            choices=(0, 1, 2, 3), type=int, default=0,
+            help=(
+                'specify the data level ('
+                '0: no data, '
+                '1: alignment only, '
+                '2: alignment and human disease data, ',
+                '3: alignment and human disease data '
+                'and assume all others benign)'))
+    args = parser.parse_args()
+    main(args)
 

@@ -22,38 +22,16 @@ import networkx as nx
 import numpy as np
 import scipy.linalg
 
-from nxblink.util import hamming_distance
+from .util import hamming_distance
+from .compound import State, compound_state_is_ok
 
 
 __all__ = [
-        'State', 'compound_state_is_ok', 'get_compound_states',
+        'get_compound_states',
         'define_compound_process', 'get_expected_rate', 'nx_to_np',
         'nx_to_np_rate_matrix', 'np_to_nx_transition_matrix',
         'compute_edge_expectation', 'compute_dwell_times',
         ]
-
-
-State = namedtuple('State', 'P T0 T1 T2')
-
-
-def compound_state_is_ok(primary_to_tol, state):
-    """
-    Check whether the primary state is compatible with its tolerance.
-
-    Parameters
-    ----------
-    primary_to_tol : dict
-        Map from primary state to the name of its tolerance class.
-    state : State
-        The compound state as a named tuple.
-
-    Returns
-    -------
-    ret : bool
-        True if the primary state is compatible with its tolerance state.
-
-    """
-    return getattr(state, primary_to_tol[state.P])
 
 
 def get_compound_states():
