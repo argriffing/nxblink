@@ -1,5 +1,5 @@
 Add a new example:
- * code2x3b
+ * nxmodelb
  * same data (alignment and disease) as code2x3
  * same tree shape and root
  * let one branch length be twice as long
