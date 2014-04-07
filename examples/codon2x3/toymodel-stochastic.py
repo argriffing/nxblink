@@ -121,6 +121,37 @@ def get_ell_dwell_contrib(
     return edge_to_contrib
 
 
+#TODO move to general blink package
+def get_ell_trans_contrib(
+        T, root,
+        Q_primary, Q_blink,
+        primary_track, tolerance_tracks):
+    """
+    """
+    tracks = [primary_track] + tolerance_tracks
+    edge_to_contrib = {}
+    for edge in T.edges():
+        va, vb = edge
+        contrib = 0
+        for track in tracks:
+            for ev in track.events[edge]:
+                if ev.track is primary_track:
+                    if Q_primary.has_edge(ev.sa, ev.sb):
+                        rate = Q_primary[ev.sa][ev.sb]['weight']
+                    else:
+                        raise Exception
+                else:
+                    if ev.sa == False and ev.sb == True:
+                        rate = Q_blink[ev.sa][ev.sb]['weight']
+                    elif ev.sa == True and ev.sb == False:
+                        rate = Q_blink[ev.sa][ev.sb]['weight']
+                    else:
+                        raise Exception
+                contrib += np.log(rate)
+        edge_to_contrib[edge] = contrib
+    return edge_to_contrib
+
+
 def get_blink_dwell_times(T, node_to_tm, blink_tracks):
     """
     This function is only for reporting results.
@@ -207,16 +238,20 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
         tolerance_tracks.append(track)
 
     
-    # Intialize contributions of the dwell times on each edge
+    # Initialize contributions of the dwell times on each edge
     # to the expected log likelihood.
     edge_to_ell_dwell_contrib = defaultdict(float)
+
+    # Initialize contributions of the transition events on each edge
+    # to the expected log likelihood.
+    edge_to_ell_trans_contrib = defaultdict(float)
 
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
     #k = 800
     #k = 400
-    #k = 200
-    k = 100
+    k = 200
+    #k = 100
     #k = 80
     nsamples = k * k
     burnin = nsamples // 10
@@ -263,18 +298,33 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
         for k, v in d.items():
             edge_to_ell_dwell_contrib[k] += v
 
+        # Get the contributions of the transition events on each edge
+        # to the expected log likelihood.
+        d = get_ell_trans_contrib(
+                T, root,
+                Q_primary, Q_blink,
+                primary_track, tolerance_tracks)
+        for k, v in d.items():
+            edge_to_ell_trans_contrib[k] += v
+
         # Loop control.
         ncounted += 1
         if ncounted == nsamples:
             break
 
     # report infos
+
+    # summary of the run
     print('burnin:', burnin)
     print('samples after burnin:', nsamples)
+
+    # transition expectations on edges by transition type
     for va_vb_type, count in sorted(va_vb_type_to_count.items()):
         va, vb, s = va_vb_type
         print(va, '->', vb, s, ':', count / nsamples)
     print()
+
+    # edge dwell
     print('edge dwell time contributions to expected log likelihood:')
     for edge, contrib in sorted(edge_to_ell_dwell_contrib.items()):
         va, vb = edge
@@ -283,6 +333,17 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     print('total dwell time contribution to expected log likelihood:')
     print(sum(edge_to_ell_dwell_contrib.values()) / nsamples)
     print()
+
+    # edge transition
+    print('edge transition event contributions to expected log likelihood:')
+    for edge, contrib in sorted(edge_to_ell_trans_contrib.items()):
+        va, vb = edge
+        print(va, '->', vb, ':', contrib / nsamples)
+    print()
+    print('total transition event contribution to expected log likelihood:')
+    print(sum(edge_to_ell_trans_contrib.values()) / nsamples)
+    print()
+
     print('dwell off:', total_dwell_off / nsamples)
     print('dwell on :', total_dwell_on / nsamples)
 
@@ -331,7 +392,7 @@ def main():
                 'N5' : {False, True},
                 },
             }
-    run(primary_to_tol, interaction_map, data)
+    #run(primary_to_tol, interaction_map, data)
     print()
 
 
@@ -413,7 +474,7 @@ def main():
                 'N5' : {False, True},
                 },
             }
-    #run(primary_to_tol, interaction_map, data)
+    run(primary_to_tol, interaction_map, data)
     print()
 
     # Alignment and fully observed disease data.
