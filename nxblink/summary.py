@@ -46,7 +46,8 @@ def get_ell_dwell_contrib(
                 if primary_tol_name == tol_name:
                     # The tol_state must be True and cannot change to False.
                     # The primary state can change to its synonymous states.
-                    rate += Q_meta[primary_state][tol_name]['weight']
+                    if Q_meta.has_edge(primary_state, tol_name):
+                        rate += Q_meta[primary_state][tol_name]['weight']
                 else:
                     # The tol_state can be True or False
                     # and is free to change from one to the other.

@@ -29,6 +29,7 @@ from __future__ import division, print_function, absolute_import
 
 from collections import defaultdict
 from functools import partial
+import argparse
 
 import networkx as nx
 import numpy as np
@@ -44,23 +45,8 @@ from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
 from nxblink.summary import get_ell_dwell_contrib, get_ell_trans_contrib
 
-from nxmodel import (
-        get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
-
-
-RATE_ON = 1.0
-RATE_OFF = 1.0
-
-#NTOLS = 3
-
-#alpha = RATE_ON / (RATE_ON + RATE_OFF)
-#t = 1 / NTOLS
-
-#P_ON = t * 1 + (1-t) * alpha
-#P_OFF = t * 0 + (1-t) * (1-alpha)
-
-P_ON = RATE_ON / (RATE_ON + RATE_OFF)
-P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)
+import nxmodel
+import nxmodelb
 
 
 ###############################################################################
@@ -90,70 +76,23 @@ def get_blink_dwell_times(T, node_to_tm, blink_tracks):
     return dwell_off, dwell_on
 
 
-#TODO move this into the nxblink package, maybe to a new module compound.py
-def get_Q_compound(Q_primary, Q_blink, primary_to_tol, compound_states):
-    """
-    Get a compound state rate matrix as a networkx Digraph.
-
-    This is only for testing, because realistically sized processes
-    will have combinatorially large compound state spaces.
-
-    """
-    Q_compound = nx.DiGraph()
-    for i, sa in enumerate(compound_states):
-
-        # skip compound states that have zero probability
-        if not compound_state_is_ok(primary_to_tol, sa):
-            continue
-
-        for j, sb in enumerate(compound_states):
-
-            # skip compound states that have zero probability
-            if not compound_state_is_ok(primary_to_tol, sb):
-                continue
-
-            # if hamming distance between compound states is not 1 then skip
-            if hamming_distance(sa, sb) != 1:
-                continue
-
-            # if a primary transition is not allowed then skip
-            if sa.P != sb.P and not Q_primary.has_edge(sa.P, sb.P):
-                continue
-
-            # set the indicator according to the transition type
-            if sa.P != sb.P:
-                if primary_to_tol[sa.P] == primary_to_tol[sb.P]:
-                    I_syn[i, j] = 1
-                else:
-                    I_non[i, j] = 1
-            else:
-                diff = sum(sb) - sum(sa)
-                if diff == 1:
-                    I_on[i, j] = 1
-                elif diff == -1:
-                    I_off[i, j] = 1
-                else:
-                    raise Exception
-
-
-
-def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
+def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     # Get the rooted directed tree shape.
-    T, root = get_T_and_root()
+    T, root = model.get_T_and_root()
 
     # Get the map from ordered tree edge to branch length.
     # The branch length has complicated units.
     # It is the expected number of primary process transitions
     # along the branch conditional on all tolerance classes being tolerated.
-    edge_to_blen = get_edge_to_blen()
+    edge_to_blen = model.get_edge_to_blen()
     node_to_tm = get_node_to_tm(T, root, edge_to_blen)
 
     # Define the uniformization factor.
     uniformization_factor = 2
 
     # Define the primary rate matrix.
-    Q_primary = get_Q_primary()
+    Q_primary = model.get_Q_primary()
 
     # Define the prior primary state distribution.
     #TODO do not use hardcoded uniform distribution
@@ -182,11 +121,13 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
             uniformization_factor=uniformization_factor)
 
     # Define the rate matrix for a single blinking trajectory.
-    Q_blink = get_Q_blink(rate_on=RATE_ON, rate_off=RATE_OFF)
+    rate_on = model.get_rate_on()
+    rate_off = model.get_rate_off()
+    Q_blink = get_Q_blink(rate_on=rate_on, rate_off=rate_off)
+    blink_distn = model.get_blink_distn()
 
-    # Define the prior blink state distribution.
-    blink_distn = {False : P_OFF, True : P_ON}
-
+    # Define rates from a primary state to adjacent primary states
+    # controlled by a given tolerance class.
     Q_meta = get_Q_meta(Q_primary, primary_to_tol)
 
     # Define tolerance process trajectories.
@@ -214,7 +155,7 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     #k = 400
     #k = 200
     #k = 100
-    k = 80
+    k = 40
     nsamples = k * k
     burnin = nsamples // 10
     ncounted = 0
@@ -310,177 +251,188 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     print('dwell on :', total_dwell_on / nsamples)
 
 
-def main():
+def main(args):
+    """
+
+    """
+    # define the model
+    if args.model == 'nxmodel':
+        model = nxmodel
+    elif args.model == 'nxmodelb':
+        model = nxmodelb
+    else:
+        raise Exception
 
     # Get the analog of the genetic code.
     # Define track interactions.
-    primary_to_tol = get_primary_to_tol()
+    primary_to_tol = model.get_primary_to_tol()
     interaction_map = get_interaction_map(primary_to_tol)
 
-    # No data.
-    print ('expectations given no alignment or disease data')
-    print()
-    data = {
-            'PRIMARY' : {
-                'N0' : {0, 1, 2, 3, 4, 5},
-                'N1' : {0, 1, 2, 3, 4, 5},
-                'N2' : {0, 1, 2, 3, 4, 5},
-                'N3' : {0, 1, 2, 3, 4, 5},
-                'N4' : {0, 1, 2, 3, 4, 5},
-                'N5' : {0, 1, 2, 3, 4, 5},
-                },
-            'T0' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            'T1' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            'T2' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            }
-    #run(primary_to_tol, interaction_map, data)
+    if args.data == 0:
+        # No data.
+        data = {
+                'PRIMARY' : {
+                    'N0' : {0, 1, 2, 3, 4, 5},
+                    'N1' : {0, 1, 2, 3, 4, 5},
+                    'N2' : {0, 1, 2, 3, 4, 5},
+                    'N3' : {0, 1, 2, 3, 4, 5},
+                    'N4' : {0, 1, 2, 3, 4, 5},
+                    'N5' : {0, 1, 2, 3, 4, 5},
+                    },
+                'T0' : {
+                    'N0' : {False, True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {False, True},
+                    'N4' : {False, True},
+                    'N5' : {False, True},
+                    },
+                'T1' : {
+                    'N0' : {False, True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {False, True},
+                    'N4' : {False, True},
+                    'N5' : {False, True},
+                    },
+                'T2' : {
+                    'N0' : {False, True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {False, True},
+                    'N4' : {False, True},
+                    'N5' : {False, True},
+                    },
+                }
+    elif args.data == 1:
+        # Alignment data only.
+        data = {
+                'PRIMARY' : {
+                    'N0' : {0},
+                    'N1' : {0, 1, 2, 3, 4, 5},
+                    'N2' : {0, 1, 2, 3, 4, 5},
+                    'N3' : {4},
+                    'N4' : {5},
+                    'N5' : {1},
+                    },
+                'T0' : {
+                    'N0' : {True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {False, True},
+                    'N4' : {False, True},
+                    'N5' : {True},
+                    },
+                'T1' : {
+                    'N0' : {False, True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {False, True},
+                    'N4' : {False, True},
+                    'N5' : {False, True},
+                    },
+                'T2' : {
+                    'N0' : {False, True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {True},
+                    'N4' : {True},
+                    'N5' : {False, True},
+                    },
+                }
+    elif args.data == 2:
+        # Alignment and disease data.
+        data = {
+                'PRIMARY' : {
+                    'N0' : {0},
+                    'N1' : {0, 1, 2, 3, 4, 5},
+                    'N2' : {0, 1, 2, 3, 4, 5},
+                    'N3' : {4},
+                    'N4' : {5},
+                    'N5' : {1},
+                    },
+                'T0' : {
+                    'N0' : {True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {False, True},
+                    'N4' : {False, True},
+                    'N5' : {True},
+                    },
+                'T1' : {
+                    'N0' : {False},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {False, True},
+                    'N4' : {False, True},
+                    'N5' : {False, True},
+                    },
+                'T2' : {
+                    'N0' : {True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {True},
+                    'N4' : {True},
+                    'N5' : {False, True},
+                    },
+                }
+    elif args.data == 3:
+        # Alignment and fully observed disease data.
+        data = {
+                'PRIMARY' : {
+                    'N0' : {0},
+                    'N1' : {0, 1, 2, 3, 4, 5},
+                    'N2' : {0, 1, 2, 3, 4, 5},
+                    'N3' : {4},
+                    'N4' : {5},
+                    'N5' : {1},
+                    },
+                'T0' : {
+                    'N0' : {True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {True},
+                    'N4' : {True},
+                    'N5' : {True},
+                    },
+                'T1' : {
+                    'N0' : {False},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {True},
+                    'N4' : {True},
+                    'N5' : {True},
+                    },
+                'T2' : {
+                    'N0' : {True},
+                    'N1' : {False, True},
+                    'N2' : {False, True},
+                    'N3' : {True},
+                    'N4' : {True},
+                    'N5' : {True},
+                    },
+                }
+    else:
+        raise Exception
+
+    run(model, primary_to_tol, interaction_map, data)
     print()
 
 
-    # Alignment data only.
-    print ('expectations given only alignment data but not disease data')
-    print()
-    data = {
-            'PRIMARY' : {
-                'N0' : {0},
-                'N1' : {0, 1, 2, 3, 4, 5},
-                'N2' : {0, 1, 2, 3, 4, 5},
-                'N3' : {4},
-                'N4' : {5},
-                'N5' : {1},
-                },
-            'T0' : {
-                'N0' : {True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {True},
-                },
-            'T1' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            'T2' : {
-                'N0' : {False, True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {True},
-                'N4' : {True},
-                'N5' : {False, True},
-                },
-            }
-    #run(primary_to_tol, interaction_map, data)
-    print()
-
-
-    # Alignment and disease data.
-    print ('expectations given alignment and disease data')
-    print()
-    data = {
-            'PRIMARY' : {
-                'N0' : {0},
-                'N1' : {0, 1, 2, 3, 4, 5},
-                'N2' : {0, 1, 2, 3, 4, 5},
-                'N3' : {4},
-                'N4' : {5},
-                'N5' : {1},
-                },
-            'T0' : {
-                'N0' : {True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {True},
-                },
-            'T1' : {
-                'N0' : {False},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {False, True},
-                'N4' : {False, True},
-                'N5' : {False, True},
-                },
-            'T2' : {
-                'N0' : {True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {True},
-                'N4' : {True},
-                'N5' : {False, True},
-                },
-            }
-    run(primary_to_tol, interaction_map, data)
-    print()
-
-    # Alignment and fully observed disease data.
-    print ('expectations given alignment and fully observed disease data')
-    print ('(all leaf disease states which were previously considered to be')
-    print ('unobserved are now considered to be tolerated (blinked on))')
-    print()
-    data = {
-            'PRIMARY' : {
-                'N0' : {0},
-                'N1' : {0, 1, 2, 3, 4, 5},
-                'N2' : {0, 1, 2, 3, 4, 5},
-                'N3' : {4},
-                'N4' : {5},
-                'N5' : {1},
-                },
-            'T0' : {
-                'N0' : {True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {True},
-                'N4' : {True},
-                'N5' : {True},
-                },
-            'T1' : {
-                'N0' : {False},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {True},
-                'N4' : {True},
-                'N5' : {True},
-                },
-            'T2' : {
-                'N0' : {True},
-                'N1' : {False, True},
-                'N2' : {False, True},
-                'N3' : {True},
-                'N4' : {True},
-                'N5' : {True},
-                },
-            }
-    #run(primary_to_tol, interaction_map, data)
-    print()
-
-
-main()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model',
+            choices=('nxmodel', 'nxmodelb'), default='nxmodel',
+            help='specify the model complexity')
+    parser.add_argument('--data',
+            choices=(0, 1, 2, 3), type=int, default=0,
+            help=(
+                'specify the data level ('
+                '0: no data, '
+                '1: alignment only, '
+                '2: alignment and human disease data, ',
+                '3: alignment and human disease data '
+                'and assume all others benign)'))
+    args = parser.parse_args()
+    main(args)
 
