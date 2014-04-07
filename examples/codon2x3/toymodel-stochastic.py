@@ -150,12 +150,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
-    #k = 800
-    #k = 400
-    k = 200
-    #k = 100
-    #k = 40
-    nsamples = k * k
+    nsamples = args.k * args.k
     burnin = nsamples // 10
     ncounted = 0
     total_dwell_off = 0
@@ -432,6 +427,8 @@ if __name__ == '__main__':
                 '2: alignment and human disease data, ',
                 '3: alignment and human disease data '
                 'and assume all others benign)'))
+    parser.add_argument('--k', type=int, default=80,
+            help='square root of number of samples')
     args = parser.parse_args()
     main(args)
 
