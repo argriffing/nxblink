@@ -133,7 +133,7 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
             #non_rate * I_non / expected_primary_rate +
             #on_rate * I_on +
             #off_rate * I_off)
-    Q_compound = nx_to_np_rate_matrix(Q_compound_nx, compound_states)
+    Q_compound = nx_to_np(Q_compound_nx, compound_states)
     row_sums = np.sum(Q_compound, axis=1)
     Q_compound = Q_compound - np.diag(row_sums)
     
