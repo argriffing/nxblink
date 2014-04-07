@@ -95,9 +95,8 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     Q_primary = model.get_Q_primary()
 
     # Define the prior primary state distribution.
-    #TODO do not use hardcoded uniform distribution
+    primary_distn = model.get_primary_distn()
     nprimary = 6
-    primary_distn = dict((s, 1/nprimary) for s in range(nprimary))
 
     # Normalize the primary rate matrix to have expected rate 1.
     expected_primary_rate = 0
@@ -153,9 +152,9 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     va_vb_type_to_count = defaultdict(int)
     #k = 800
     #k = 400
-    #k = 200
+    k = 200
     #k = 100
-    k = 40
+    #k = 40
     nsamples = k * k
     burnin = nsamples // 10
     ncounted = 0
