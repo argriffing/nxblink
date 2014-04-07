@@ -42,6 +42,7 @@ from nxblink.util import get_node_to_tm
 from nxblink.raoteh import blinking_model_rao_teh
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
+from nxblink.summary import get_ell_dwell_contrib, get_ell_trans_contrib
 
 from nxmodel import (
         get_Q_primary, get_primary_to_tol, get_T_and_root, get_edge_to_blen)
@@ -64,92 +65,6 @@ P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)
 
 ###############################################################################
 # Classes and functions for steps of Rao Teh iteration.
-
-
-#TODO eventually pull this function into the general blink package
-def get_ell_dwell_contrib(
-        T, root, node_to_tm,
-        Q_primary, Q_blink, Q_meta,
-        primary_track, tolerance_tracks, primary_to_tol):
-    """
-
-    Returns
-    -------
-    edge_to_contrib : dict
-        maps directed edges to dwell time contribution to expected log lhood
-
-    """
-    tracks = [primary_track] + tolerance_tracks
-    edge_to_contrib = {}
-    for edge in T.edges():
-        va, vb = edge
-        contrib = 0
-        for tma, tmb, track_to_state in gen_segments(
-                edge, node_to_tm, tracks):
-            primary_state = track_to_state[primary_track.name]
-            primary_tol_name = primary_to_tol[primary_state]
-
-            # Get the context-dependent rate.
-            rate = 0
-            for tol_track in tolerance_tracks:
-                tol_name = tol_track.name
-                tol_state = track_to_state[tol_name]
-
-                if primary_tol_name == tol_name:
-                    # The tol_state must be True and cannot change to False.
-                    # The primary state can change to its synonymous states.
-                    rate += Q_meta[primary_state][tol_name]['weight']
-                else:
-                    # The tol_state can be True or False
-                    # and is free to change from one to the other.
-                    # If the tol_state is True then the primary state
-                    # can change to any of its neighbors in this tol_name.
-                    if tol_state:
-                        rate += Q_blink[True][False]['weight']
-                        if Q_meta.has_edge(primary_state, tol_name):
-                            rate += Q_meta[primary_state][tol_name]['weight']
-                    else:
-                        rate += Q_blink[False][True]['weight']
-
-            # Accumulate the contribution of the segment.
-            contrib += -(rate * (tmb - tma))
-
-        # Store the edge contribution.
-        edge_to_contrib[edge] = contrib
-
-    # Return the map of contributions from edges.
-    return edge_to_contrib
-
-
-#TODO move to general blink package
-def get_ell_trans_contrib(
-        T, root,
-        Q_primary, Q_blink,
-        primary_track, tolerance_tracks):
-    """
-    """
-    tracks = [primary_track] + tolerance_tracks
-    edge_to_contrib = {}
-    for edge in T.edges():
-        va, vb = edge
-        contrib = 0
-        for track in tracks:
-            for ev in track.events[edge]:
-                if ev.track is primary_track:
-                    if Q_primary.has_edge(ev.sa, ev.sb):
-                        rate = Q_primary[ev.sa][ev.sb]['weight']
-                    else:
-                        raise Exception
-                else:
-                    if ev.sa == False and ev.sb == True:
-                        rate = Q_blink[ev.sa][ev.sb]['weight']
-                    elif ev.sa == True and ev.sb == False:
-                        rate = Q_blink[ev.sa][ev.sb]['weight']
-                    else:
-                        raise Exception
-                contrib += np.log(rate)
-        edge_to_contrib[edge] = contrib
-    return edge_to_contrib
 
 
 def get_blink_dwell_times(T, node_to_tm, blink_tracks):
@@ -250,9 +165,9 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     va_vb_type_to_count = defaultdict(int)
     #k = 800
     #k = 400
-    k = 200
+    #k = 200
     #k = 100
-    #k = 80
+    k = 80
     nsamples = k * k
     burnin = nsamples // 10
     ncounted = 0
