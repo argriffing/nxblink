@@ -9,6 +9,7 @@ Add a new example:
  * same tree shape and root
  * let one branch length be twice as long
  * let another branch length be half as long
+ * set a couple of branch lengths to zero
  * remove the synonymous transition between states P4 <--> P5
  * force the primary process equilibrium distribution to be non-uniform
    by increasing the equilbrium frequency of state P1 by doubling its
@@ -133,8 +134,8 @@ def get_edge_to_blen():
     """
     blen = 0.5
     edge_to_blen = {
-            ('N1', 'N0') : blen,
-            ('N1', 'N2') : blen,
+            ('N1', 'N0') : 0,
+            ('N1', 'N2') : 0,
             ('N1', 'N5') : blen,
             ('N2', 'N3') : 2.0*blen,
             ('N2', 'N4') : 0.5*blen,
