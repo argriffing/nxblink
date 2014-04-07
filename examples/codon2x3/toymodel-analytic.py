@@ -11,6 +11,7 @@ import scipy.linalg
 from scipy.special import xlogy
 
 from nxmctree import dynamic_fset_lhood
+from nxblink.util import hamming_distance
 from nxblink.denseutil import (
         State, compound_state_is_ok, get_compound_states,
         define_compound_process, get_expected_rate, nx_to_np,
@@ -18,6 +19,58 @@ from nxblink.denseutil import (
         compute_edge_expectation, compute_dwell_times)
 
 import nxmodel
+import nxmodelb
+
+
+#TODO move this into the nxblink package, maybe to a new module compound.py
+def get_Q_compound(
+        Q_primary, on_rate, off_rate, primary_to_tol, compound_states):
+    """
+    Get a compound state rate matrix as a networkx Digraph.
+
+    This is only for testing, because realistically sized processes
+    will have combinatorially large compound state spaces.
+
+    """
+    Q_compound = nx.DiGraph()
+    for i, sa in enumerate(compound_states):
+
+        # skip compound states that have zero probability
+        if not compound_state_is_ok(primary_to_tol, sa):
+            continue
+
+        for j, sb in enumerate(compound_states):
+
+            # skip compound states that have zero probability
+            if not compound_state_is_ok(primary_to_tol, sb):
+                continue
+
+            # if hamming distance between compound states is not 1 then skip
+            if hamming_distance(sa, sb) != 1:
+                continue
+
+            # if a primary transition is not allowed then skip
+            if sa.P != sb.P and not Q_primary.has_edge(sa.P, sb.P):
+                continue
+
+            # add the primary transition or tolerance transition
+            if sa.P != sb.P:
+                rate = Q_primary[sa.P][sb.P]['weight']
+                if primary_to_tol[sa.P] == primary_to_tol[sb.P]:
+                    # synonymous primary process transition
+                    Q_compound.add_edge(sa, sb, weight=rate)
+                else:
+                    # non-synonymous primary process transition
+                    Q_compound.add_edge(sa, sb, weight=rate)
+            else:
+                diff = sum(sb) - sum(sa)
+                if diff == 1:
+                    Q_compound.add_edge(sa, sb, weight=on_rate)
+                elif diff == -1:
+                    Q_compound.add_edge(sa, sb, weight=off_rate)
+                else:
+                    raise Exception
+    return Q_compound
 
 
 def run(model, primary_to_tol, compound_states, node_to_data_fset):
@@ -32,19 +85,29 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
 
     ncompound = len(compound_states)
 
+    # Get the prior blink state distribution.
+    blink_distn = model.get_blink_distn()
+
+    #TODO check that the primary rate matrix is time-reversible
     # Get the primary rate matrix and convert it to a dense ndarray.
     nprimary = 6
     Q_primary_nx = model.get_Q_primary()
     Q_primary_dense = nx_to_np_rate_matrix(Q_primary_nx, range(nprimary))
-    primary_distn_dense = np.ones(nprimary, dtype=float) / nprimary
+    primary_distn = model.get_primary_distn()
+    primary_distn_dense = np.array([primary_distn[i] for i in range(nprimary)])
 
-    # The expected rate of the pure primary process
-    # will be used for normalization.
-    expected_primary_rate = get_expected_rate(
-            Q_primary_dense, primary_distn_dense)
-    #print('pure primary process expected rate:')
-    #print(expected_primary_rate)
-    #print
+    # Get the expected rate using only the nx rate matrix and the nx distn.
+    expected_primary_rate = 0
+    for sa, sb in Q_primary_nx.edges():
+        p = primary_distn[sa]
+        rate = Q_primary_nx[sa][sb]['weight']
+        expected_primary_rate += p * rate
+
+    # Normalize the primary rate matrix by dividing all rates
+    # by the expected rate.
+    for sa, sb in Q_primary_nx.edges():
+        Q_primary_nx[sa][sb]['weight'] /= expected_primary_rate
+
 
     # Get the rooted directed tree shape.
     T, root = model.get_T_and_root()
@@ -61,30 +124,33 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
     I_syn, I_non, I_on, I_off = indicators
 
     # Define the dense compound transition rate matrix through the indicators.
-    syn_rate = 1.0
-    non_rate = 1.0
-    on_rate = 1.0
-    off_rate = 1.0
-    Q_compound = (
-            syn_rate * I_syn / expected_primary_rate +
-            non_rate * I_non / expected_primary_rate +
-            #syn_rate * I_syn +
-            #non_rate * I_non +
-            on_rate * I_on +
-            off_rate * I_off)
-    #Q_compound = Q_compound / expected_primary_rate
+    on_rate = model.get_rate_on()
+    off_rate = model.get_rate_off()
+    Q_compound_nx = get_Q_compound(
+            Q_primary_nx, on_rate, off_rate, primary_to_tol, compound_states)
+    #Q_compound = (
+            #syn_rate * I_syn / expected_primary_rate +
+            #non_rate * I_non / expected_primary_rate +
+            #on_rate * I_on +
+            #off_rate * I_off)
+    Q_compound = nx_to_np_rate_matrix(Q_compound_nx, compound_states)
     row_sums = np.sum(Q_compound, axis=1)
     Q_compound = Q_compound - np.diag(row_sums)
     
     # Define a sparse stationary distribution over compound states.
-    # This should use the rates but for now it will just be
-    # uniform over the ok compound states because of symmetry.
     compound_distn = {}
     for state in compound_states:
         if compound_state_is_ok(primary_to_tol, state):
-            compound_distn[state] = 1.0
+            p = 1.0
+            p *= primary_distn[state.P]
+            for tol_name in 'T0', 'T1', 'T2':
+                if primary_to_tol[state.P] != tol_name:
+                    tol_state = getattr(state, tol_name)
+                    p *= blink_distn[tol_state]
+            compound_distn[state] = p
     total = sum(compound_distn.values())
-    compound_distn = dict((k, v/total) for k, v in compound_distn.items())
+    assert_allclose(total, 1)
+    #compound_distn = dict((k, v/total) for k, v in compound_distn.items())
     #print('compound distn:')
     #print(compound_distn)
     #print()
@@ -216,6 +282,7 @@ def run(model, primary_to_tol, compound_states, node_to_data_fset):
 
 def main():
 
+    #model = nxmodelb
     model = nxmodel
 
     # Get the analog of the genetic code.

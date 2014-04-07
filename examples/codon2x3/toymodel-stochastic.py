@@ -90,6 +90,53 @@ def get_blink_dwell_times(T, node_to_tm, blink_tracks):
     return dwell_off, dwell_on
 
 
+#TODO move this into the nxblink package, maybe to a new module compound.py
+def get_Q_compound(Q_primary, Q_blink, primary_to_tol, compound_states):
+    """
+    Get a compound state rate matrix as a networkx Digraph.
+
+    This is only for testing, because realistically sized processes
+    will have combinatorially large compound state spaces.
+
+    """
+    Q_compound = nx.DiGraph()
+    for i, sa in enumerate(compound_states):
+
+        # skip compound states that have zero probability
+        if not compound_state_is_ok(primary_to_tol, sa):
+            continue
+
+        for j, sb in enumerate(compound_states):
+
+            # skip compound states that have zero probability
+            if not compound_state_is_ok(primary_to_tol, sb):
+                continue
+
+            # if hamming distance between compound states is not 1 then skip
+            if hamming_distance(sa, sb) != 1:
+                continue
+
+            # if a primary transition is not allowed then skip
+            if sa.P != sb.P and not Q_primary.has_edge(sa.P, sb.P):
+                continue
+
+            # set the indicator according to the transition type
+            if sa.P != sb.P:
+                if primary_to_tol[sa.P] == primary_to_tol[sb.P]:
+                    I_syn[i, j] = 1
+                else:
+                    I_non[i, j] = 1
+            else:
+                diff = sum(sb) - sum(sa)
+                if diff == 1:
+                    I_on[i, j] = 1
+                elif diff == -1:
+                    I_off[i, j] = 1
+                else:
+                    raise Exception
+
+
+
 def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     # Get the rooted directed tree shape.

@@ -9,7 +9,34 @@ import networkx as nx
 __all__ = [
         'get_Q_primary', 'get_primary_to_tol',
         'get_T_and_root', 'get_edge_to_blen',
+        'get_rate_on', 'get_rate_off',
+        'get_blink_distn', 'get_primary_distn',
         ]
+
+
+def get_rate_on():
+    return 1.0
+
+
+def get_rate_off():
+    return 1.0
+
+
+def get_primary_distn():
+    nprimary = 6
+    return dict((i, 1/nprimary) for i in range(nprimary))
+
+
+def get_blink_distn():
+    rate_on = get_rate_on()
+    rate_off = get_rate_off()
+    total = rate_on + rate_off
+    distn = {
+            0 : rate_off / total,
+            1 : rate_on / total,
+            }
+    return distn
+
 
 def get_Q_primary():
     """
@@ -37,10 +64,6 @@ def get_Q_primary():
     return Q_primary
 
 
-#TODO this is in nxblink/modelutil
-#def get_Q_blink(rate_on=None, rate_off=None):
-
-
 def get_primary_to_tol():
     """
     Return a map from primary state to tolerance track name.
@@ -57,10 +80,6 @@ def get_primary_to_tol():
             5 : 'T2',
             }
     return primary_to_tol
-
-
-#TODO this is in nxblink/modelutil
-#def get_Q_meta(Q_primary, primary_to_tol):
 
 
 def get_T_and_root():
@@ -86,11 +105,4 @@ def get_edge_to_blen():
             }
     return edge_to_blen
 
-
-#TODO this is in nxblink/modelutil
-#def hamming_distance(va, vb):
-
-
-#TODO this is in nxblink/modelutil
-#def compound_state_is_ok(primary_to_tol, state):
 
