@@ -6,6 +6,7 @@ tol -- tolerance
 traj -- trajectory
 fg -- foreground track
 bg -- background track
+ell -- expected log likelihood
 
 The tree is rooted and edges are directed.
 For each substate track, each permanent node maps to a list of events.
@@ -63,6 +64,61 @@ P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)
 
 ###############################################################################
 # Classes and functions for steps of Rao Teh iteration.
+
+
+#TODO eventually pull this function into the general blink package
+def get_ell_dwell_contrib(
+        T, root, node_to_tm,
+        Q_primary, Q_blink, Q_meta,
+        primary_track, tolerance_tracks, primary_to_tol):
+    """
+
+    Returns
+    -------
+    edge_to_contrib : dict
+        maps directed edges to dwell time contribution to expected log lhood
+
+    """
+    tracks = [primary_track] + tolerance_tracks
+    edge_to_contrib = {}
+    for edge in T.edges():
+        va, vb = edge
+        contrib = 0
+        for tma, tmb, track_to_state in gen_segments(
+                edge, node_to_tm, tracks):
+            primary_state = track_to_state[primary_track.name]
+            primary_tol_name = primary_to_tol[primary_state]
+
+            # Get the context-dependent rate.
+            rate = 0
+            for tol_track in tolerance_tracks:
+                tol_name = tol_track.name
+                tol_state = track_to_state[tol_name]
+
+                if primary_tol_name == tol_name:
+                    # The tol_state must be True and cannot change to False.
+                    # The primary state can change to its synonymous states.
+                    rate += Q_meta[primary_state][tol_name]['weight']
+                else:
+                    # The tol_state can be True or False
+                    # and is free to change from one to the other.
+                    # If the tol_state is True then the primary state
+                    # can change to any of its neighbors in this tol_name.
+                    if tol_state:
+                        rate += Q_blink[True][False]['weight']
+                        if Q_meta.has_edge(primary_state, tol_name):
+                            rate += Q_meta[primary_state][tol_name]['weight']
+                    else:
+                        rate += Q_blink[False][True]['weight']
+
+            # Accumulate the contribution of the segment.
+            contrib += -(rate * (tmb - tma))
+
+        # Store the edge contribution.
+        edge_to_contrib[edge] = contrib
+
+    # Return the map of contributions from edges.
+    return edge_to_contrib
 
 
 def get_blink_dwell_times(T, node_to_tm, blink_tracks):
@@ -150,12 +206,18 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
                 uniformization_factor=uniformization_factor)
         tolerance_tracks.append(track)
 
+    
+    # Intialize contributions of the dwell times on each edge
+    # to the expected log likelihood.
+    edge_to_ell_dwell_contrib = defaultdict(float)
+
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
     #k = 800
     #k = 400
     #k = 200
-    k = 80
+    k = 100
+    #k = 80
     nsamples = k * k
     burnin = nsamples // 10
     ncounted = 0
@@ -191,6 +253,16 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
         dwell_off, dwell_on = get_blink_dwell_times(T, node_to_tm, tol_tracks)
         total_dwell_off += dwell_off
         total_dwell_on += dwell_on
+
+        # Get the contributions of the dwell times on each edge
+        # to the expected log likelihood.
+        d = get_ell_dwell_contrib(
+                T, root, node_to_tm,
+                Q_primary, Q_blink, Q_meta,
+                primary_track, tolerance_tracks, primary_to_tol)
+        for k, v in d.items():
+            edge_to_ell_dwell_contrib[k] += v
+
         # Loop control.
         ncounted += 1
         if ncounted == nsamples:
@@ -202,6 +274,15 @@ def run(primary_to_tol, interaction_map, track_to_node_to_data_fset):
     for va_vb_type, count in sorted(va_vb_type_to_count.items()):
         va, vb, s = va_vb_type
         print(va, '->', vb, s, ':', count / nsamples)
+    print()
+    print('edge dwell time contributions to expected log likelihood:')
+    for edge, contrib in sorted(edge_to_ell_dwell_contrib.items()):
+        va, vb = edge
+        print(va, '->', vb, ':', contrib / nsamples)
+    print()
+    print('total dwell time contribution to expected log likelihood:')
+    print(sum(edge_to_ell_dwell_contrib.values()) / nsamples)
+    print()
     print('dwell off:', total_dwell_off / nsamples)
     print('dwell on :', total_dwell_on / nsamples)
 
