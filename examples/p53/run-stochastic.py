@@ -23,9 +23,11 @@ import app_helper
 import nxblink
 from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
-from nxblink.raoteh import blinking_model_rao_teh
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
+from nxblink.summary import get_ell_dwell_contrib, get_ell_trans_contrib
+from nxblink.raoteh import (
+        blinking_model_rao_teh, update_track_data_for_zero_blen)
 
 from nxmodel import (
         get_Q_primary_and_distn, get_primary_to_tol, get_tree_info)
@@ -539,14 +541,21 @@ def main(args):
                     uniformization_factor=uniformization_factor)
             tolerance_tracks.append(track)
 
+        # Update track data, accounting for branches with length zero.
+        tracks = [primary_track] + tolerance_tracks
+        update_track_data_for_zero_blen(T, edge_to_blen, tracks)
+        
+        # Initialize contributions of the dwell times on each edge
+        # to the expected log likelihood.
+        edge_to_ell_dwell_contrib = defaultdict(float)
+
+        # Initialize contributions of the transition events on each edge
+        # to the expected log likelihood.
+        edge_to_ell_trans_contrib = defaultdict(float)
+
         # sample correlated trajectories using rao teh on the blinking model
         va_vb_type_to_count = defaultdict(int)
-        #k = 800
-        #k = 400
-        #k = 200
-        #k = 80
-        k = 10
-        nsamples = k * k
+        nsamples = args.k * args.k
         burnin = nsamples // 10
         ncounted = 0
         total_dwell_off = 0
@@ -585,6 +594,25 @@ def main(args):
                     #T, node_to_tm, tol_tracks)
             #total_dwell_off += dwell_off
             #total_dwell_on += dwell_on
+
+            # Get the contributions of the dwell times on each edge
+            # to the expected log likelihood.
+            d = get_ell_dwell_contrib(
+                    T, root, node_to_tm,
+                    Q_primary, Q_blink, Q_meta,
+                    primary_track, tolerance_tracks, primary_to_tol)
+            for k, v in d.items():
+                edge_to_ell_dwell_contrib[k] += v
+
+            # Get the contributions of the transition events on each edge
+            # to the expected log likelihood.
+            d = get_ell_trans_contrib(
+                    T, root,
+                    Q_primary, Q_blink,
+                    primary_track, tolerance_tracks)
+            for k, v in d.items():
+                edge_to_ell_trans_contrib[k] += v
+
             # Loop control.
             ncounted += 1
             if ncounted == nsamples:
@@ -600,6 +628,26 @@ def main(args):
         #print('dwell on :', total_dwell_on / nsamples)
         print()
 
+        # edge dwell
+        #print('edge dwell time contributions to expected log likelihood:')
+        #for edge, contrib in sorted(edge_to_ell_dwell_contrib.items()):
+            #va, vb = edge
+            #print(va, '->', vb, ':', contrib / nsamples)
+        #print()
+        print('total dwell time contribution to expected log likelihood:')
+        print(sum(edge_to_ell_dwell_contrib.values()) / nsamples)
+        print()
+
+        # edge transition
+        #print('edge transition contributions to expected log likelihood:')
+        #for edge, contrib in sorted(edge_to_ell_trans_contrib.items()):
+            #va, vb = edge
+            #print(va, '->', vb, ':', contrib / nsamples)
+        #print()
+        print('total transition event contribution to expected log likelihood:')
+        print(sum(edge_to_ell_trans_contrib.values()) / nsamples)
+        print()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
@@ -608,5 +656,7 @@ if __name__ == '__main__':
             help='limit the number of summarized columns')
     parser.add_argument('--disease', required=True,
             help='csv file with filtered disease data')
+    parser.add_argument('--k', type=int, default=10,
+            help='square root of number of samples')
     main(parser.parse_args())
 

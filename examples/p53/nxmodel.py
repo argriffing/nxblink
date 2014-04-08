@@ -76,9 +76,6 @@ def _tree_helper(tree, root):
     for va, vb in nx.bfs_edges(tree, root):
         T.add_edge(va, vb)
         edge_to_blen[va, vb] = tree[va][vb]['weight']
-        #XXX add a bit to each branch length to avoid dividing by zero
-        #XXX fix this later by combining nodes separated by zero distance
-        edge_to_blen[va, vb] += 1e-4
     return T, root, edge_to_blen
 
 
