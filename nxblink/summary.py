@@ -12,7 +12,28 @@ import math
 from .navigation import gen_segments
 
 
-__all__ = ['get_ell_dwell_contrib', 'get_ell_trans_contrib']
+__all__ = [
+        'get_ell_init_contrib',
+        'get_ell_dwell_contrib',
+        'get_ell_trans_contrib',
+        ]
+
+
+def get_ell_init_contrib(
+        root,
+        primary_distn, blink_distn,
+        primary_track, tolerance_tracks, primary_to_tol):
+    """
+    """
+    ll_init = 0
+    primary_state = primary_track.history[root]
+    tol_name = primary_to_tol[primary_state]
+    ll_init += math.log(primary_distn[primary_state])
+    for tol_track in tolerance_tracks:
+        if tol_track.name != tol_name:
+            tol_state = tol_track.history[root]
+            ll_init += math.log(blink_distn[tol_state])
+    return ll_init
 
 
 def get_ell_dwell_contrib(

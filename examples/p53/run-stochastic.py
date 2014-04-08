@@ -25,7 +25,8 @@ from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
-from nxblink.summary import get_ell_dwell_contrib, get_ell_trans_contrib
+from nxblink.summary import (
+        get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         blinking_model_rao_teh, update_track_data_for_zero_blen)
 
@@ -144,6 +145,10 @@ def process_alignment_column(
     # Update track data, accounting for branches with length zero.
     tracks = [primary_track] + tolerance_tracks
     update_track_data_for_zero_blen(T, edge_to_blen, tracks)
+
+    # Initialize the log likelihood contribution
+    # of the initial state at the root.
+    ell_init_contrib = 0
     
     # Initialize contributions of the dwell times on each edge
     # to the expected log likelihood.
@@ -156,7 +161,7 @@ def process_alignment_column(
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
     nsamples = nsamples_sqrt * nsamples_sqrt
-    burnin = nsamples // 10
+    burnin = nsamples_sqrt
     ncounted = 0
     total_dwell_off = 0
     total_dwell_on = 0
@@ -165,7 +170,8 @@ def process_alignment_column(
             Q_primary, Q_blink, Q_meta,
             primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
-        print(nsampled)
+        if nsampled % 10 == 0:
+            print(nsampled)
         if nsampled <= burnin:
             continue
         # Summarize the trajectories.
@@ -195,6 +201,14 @@ def process_alignment_column(
         #total_dwell_off += dwell_off
         #total_dwell_on += dwell_on
 
+        # Get the contribution of the prior probabilty of the root state
+        # to the expected log likelihood.
+        ll_init = get_ell_init_contrib(
+                root,
+                primary_distn, blink_distn,
+                primary_track, tolerance_tracks, primary_to_tol)
+        ell_init_contrib += ll_init
+
         # Get the contributions of the dwell times on each edge
         # to the expected log likelihood.
         d = get_ell_dwell_contrib(
@@ -221,9 +235,9 @@ def process_alignment_column(
     # report infos
     print('burnin:', burnin)
     print('samples after burnin:', nsamples)
-    for va_vb_type, count in sorted(va_vb_type_to_count.items()):
-        va, vb, s = va_vb_type
-        print(va, '->', vb, s, ':', count / nsamples)
+    #for va_vb_type, count in sorted(va_vb_type_to_count.items()):
+        #va, vb, s = va_vb_type
+        #print(va, '->', vb, s, ':', count / nsamples)
     #print('dwell off:', total_dwell_off / nsamples)
     #print('dwell on :', total_dwell_on / nsamples)
     print()
@@ -234,8 +248,9 @@ def process_alignment_column(
         #va, vb = edge
         #print(va, '->', vb, ':', contrib / nsamples)
     #print()
+    total_ell_dwell_contrib = sum(edge_to_ell_dwell_contrib.values())
     print('total dwell time contribution to expected log likelihood:')
-    print(sum(edge_to_ell_dwell_contrib.values()) / nsamples)
+    print(total_ell_dwell_contrib / nsamples)
     print()
 
     # edge transition
@@ -244,8 +259,21 @@ def process_alignment_column(
         #va, vb = edge
         #print(va, '->', vb, ':', contrib / nsamples)
     #print()
-    print('total transition event contribution to expected log likelihood:')
-    print(sum(edge_to_ell_trans_contrib.values()) / nsamples)
+    total_ell_trans_contrib = sum(edge_to_ell_trans_contrib.values())
+    print('transition event contribution to expected log likelihood:')
+    print(total_ell_trans_contrib / nsamples)
+    print()
+
+    total_ell_init_contrib = ell_init_contrib
+    print('root state contribution to expected log likelihood:')
+    print(total_ell_init_contrib / nsamples)
+    print()
+    
+    print('expected log likelihood for this alignment column:')
+    print(sum((
+        total_ell_dwell_contrib,
+        total_ell_trans_contrib,
+        total_ell_init_contrib)) / nsamples)
     print()
 
 
