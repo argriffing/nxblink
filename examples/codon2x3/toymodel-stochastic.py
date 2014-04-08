@@ -164,7 +164,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
             Q_primary, Q_blink, Q_meta,
             primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
-        if nsampled < burnin:
+        if nsampled <= burnin:
             continue
         # Summarize the trajectories.
         for edge in T.edges():
