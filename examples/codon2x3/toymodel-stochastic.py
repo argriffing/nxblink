@@ -42,7 +42,8 @@ from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
-from nxblink.summary import get_ell_dwell_contrib, get_ell_trans_contrib
+from nxblink.summary import (
+        get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         blinking_model_rao_teh, update_track_data_for_zero_blen)
 
@@ -143,6 +144,14 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     # Update track data, accounting for branches with length zero.
     tracks = [primary_track] + tolerance_tracks
     update_track_data_for_zero_blen(T, edge_to_blen, tracks)
+
+    # Initialize the log likelihood contribution
+    # of the initial state at the root.
+    ell_init_contrib = 0
+    
+    # Initialize contributions of the dwell times on each edge
+    # to the expected log likelihood.
+    edge_to_ell_dwell_contrib = defaultdict(float)
     
     # Initialize contributions of the dwell times on each edge
     # to the expected log likelihood.
@@ -190,6 +199,14 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
         total_dwell_off += dwell_off
         total_dwell_on += dwell_on
 
+        # Get the contribution of the prior probabilty of the root state
+        # to the expected log likelihood.
+        ll_init = get_ell_init_contrib(
+                root,
+                primary_distn, blink_distn,
+                primary_track, tolerance_tracks, primary_to_tol)
+        ell_init_contrib += ll_init
+
         # Get the contributions of the dwell times on each edge
         # to the expected log likelihood.
         d = get_ell_dwell_contrib(
@@ -223,6 +240,11 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     for va_vb_type, count in sorted(va_vb_type_to_count.items()):
         va, vb, s = va_vb_type
         print(va, '->', vb, s, ':', count / nsamples)
+    print()
+
+    # initial state contribution
+    print('root state contribution to expected log likelihood:')
+    print(ell_init_contrib / nsamples)
     print()
 
     # edge dwell

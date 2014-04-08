@@ -170,8 +170,8 @@ def process_alignment_column(
             Q_primary, Q_blink, Q_meta,
             primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
-        if nsampled % 10 == 0:
-            print(nsampled)
+        if nsampled % nsamples_sqrt == 0:
+            print('iteration', nsampled)
         if nsampled <= burnin:
             continue
         # Summarize the trajectories.
@@ -233,14 +233,14 @@ def process_alignment_column(
             break
 
     # report infos
-    print('burnin:', burnin)
-    print('samples after burnin:', nsamples)
+    #print('burnin:', burnin)
+    #print('samples after burnin:', nsamples)
     #for va_vb_type, count in sorted(va_vb_type_to_count.items()):
         #va, vb, s = va_vb_type
         #print(va, '->', vb, s, ':', count / nsamples)
     #print('dwell off:', total_dwell_off / nsamples)
     #print('dwell on :', total_dwell_on / nsamples)
-    print()
+    #print()
 
     # edge dwell
     #print('edge dwell time contributions to expected log likelihood:')
@@ -249,9 +249,9 @@ def process_alignment_column(
         #print(va, '->', vb, ':', contrib / nsamples)
     #print()
     total_ell_dwell_contrib = sum(edge_to_ell_dwell_contrib.values())
-    print('total dwell time contribution to expected log likelihood:')
-    print(total_ell_dwell_contrib / nsamples)
-    print()
+    #print('total dwell time contribution to expected log likelihood:')
+    #print(total_ell_dwell_contrib / nsamples)
+    #print()
 
     # edge transition
     #print('edge transition contributions to expected log likelihood:')
@@ -260,21 +260,31 @@ def process_alignment_column(
         #print(va, '->', vb, ':', contrib / nsamples)
     #print()
     total_ell_trans_contrib = sum(edge_to_ell_trans_contrib.values())
-    print('transition event contribution to expected log likelihood:')
-    print(total_ell_trans_contrib / nsamples)
-    print()
+    #print('transition event contribution to expected log likelihood:')
+    #print(total_ell_trans_contrib / nsamples)
+    #print()
 
     total_ell_init_contrib = ell_init_contrib
-    print('root state contribution to expected log likelihood:')
-    print(total_ell_init_contrib / nsamples)
-    print()
-    
-    print('expected log likelihood for this alignment column:')
-    print(sum((
-        total_ell_dwell_contrib,
-        total_ell_trans_contrib,
-        total_ell_init_contrib)) / nsamples)
-    print()
+    #print('root state contribution to expected log likelihood:')
+    #print(total_ell_init_contrib / nsamples)
+    #print()
+
+    #print('expected log likelihood for this alignment column:')
+    #print(sum((
+        #total_ell_dwell_contrib,
+        #total_ell_trans_contrib,
+        #total_ell_init_contrib)) / nsamples)
+    #print()
+
+    ell_init = total_ell_init_contrib / nsamples
+    ell_trans = total_ell_trans_contrib / nsamples
+    ell_dwell = total_ell_dwell_contrib / nsamples
+    print('sample average log likelihood:')
+    print('contribution of root state        :', ell_init)
+    print('contribution of transition counts :', ell_trans)
+    print('contribution of dwell times       :', ell_dwell)
+    print('total                             :', (
+        ell_init + ell_trans + ell_dwell))
 
 
 def main(args):
@@ -344,6 +354,7 @@ def main(args):
         pos = i + 1
         benign_residues = pos_to_benign_residues.get(pos, set())
         lethal_residues = pos_to_lethal_residues.get(pos, set())
+        print('codon position', pos)
         process_alignment_column(
                 args.k,
                 genetic_code, primary_to_tol,
@@ -353,6 +364,7 @@ def main(args):
                 names, codon_column,
                 benign_residues, lethal_residues,
                 )
+        print()
 
 
 if __name__ == '__main__':
