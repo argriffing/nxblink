@@ -253,9 +253,6 @@ def main(args):
     """
 
     """
-    ###########################################################################
-    # Model specification and conversion.
-
     # Specify the model.
     # Define the rate matrix for a single blinking trajectory,
     # and the prior blink state distribution.
@@ -269,16 +266,10 @@ def main(args):
     blink_distn = {False : P_OFF, True : P_ON}
     Q_meta = get_Q_meta(Q_primary, primary_to_tol)
 
-    ###########################################################################
-    # Tree specification and conversion.
-
     # Specify the tree shape, the root,
     # the branch lengths, and the map from leaf name to leaf node.
     T, root, edge_to_blen, name_to_leaf = get_tree_info()
     human_leaf = name_to_leaf['Has']
-
-    ###########################################################################
-    # Data specification and conversion.
 
     # Read the alignment.
     print('reading the alignment...')
@@ -316,12 +307,11 @@ def main(args):
     else:
         selected_codon_columns = codon_columns[:args.ncols]
 
-    ###########################################################################
-    # Analyze some codon columns.
-
+    # Re-read the genetic code to pass to the per-column analysis.
     with open('universal.code.txt') as fin:
         genetic_code = app_helper.read_genetic_code(fin)
 
+    # Analyze some codon columns.
     for i, codon_column in enumerate(selected_codon_columns):
         pos = i + 1
         benign_residues = pos_to_benign_residues.get(pos, set())
@@ -335,194 +325,6 @@ def main(args):
                 names, codon_column,
                 benign_residues, lethal_residues,
                 )
-
-        """
-        # Define the column-specific disease states and the benign states.
-        benign_residues = pos_to_benign_residues.get(pos, set())
-        lethal_residues = pos_to_lethal_residues.get(pos, set())
-        benign_states = set()
-        lethal_states = set()
-        for s, r, c in genetic_code:
-            if r in benign_residues:
-                benign_states.add(s)
-            elif r in lethal_residues:
-                lethal_states.add(s)
-            else:
-                raise Exception(
-                        'each amino acid should be considered either '
-                        'benign or lethal in this model, '
-                        'but residue %s at position %s '
-                        'was found to be neither' % (r, pos))
-
-        # add the primary node_to_fset constraints implied by the alignment
-        primary_map = {}
-        primary_map['PRIMARY'] = {}
-        all_primary_states = set(primary_distn)
-        for v in T:
-            primary_map['PRIMARY'][v] = all_primary_states
-        for name, codon in zip(names, codon_column):
-            leaf = name_to_leaf[name]
-            primary_map['PRIMARY'][leaf] = {codon_to_state[codon]}
-
-        # add the tolerance node_to_fset constraints implied by the alignment
-        tolerance_map = {}
-        all_parts = set(primary_to_tol.values())
-        for part in all_parts:
-            tolerance_map[part] = {}
-            for v in T:
-                tolerance_map[part][v] = {False, True}
-            for name, codon in zip(names, codon_column):
-                leaf = name_to_leaf[name]
-                primary_state = codon_to_state[codon]
-                observed_part = primary_to_tol[primary_state]
-                if part == observed_part:
-                    tolerance_map[part][leaf] = {True}
-                else:
-                    tolerance_map[part][leaf] = {False, True}
-
-        # adjust the tolerance constraints using disease data
-        for primary_state in benign_states:
-            part = primary_to_tol[primary_state]
-            tolerance_map[part][leaf] = {True}
-        for primary_state in lethal_states:
-            part = primary_to_tol[primary_state]
-            tolerance_map[part][leaf] = {False}
-
-        # update the data including both the primary and tolerance constraints
-        data = {}
-        data.update(primary_map)
-        data.update(tolerance_map)
-
-        # run the analysis for the column
-        #run(primary_to_tol, interaction_map, data)
-        #print()
-
-        track_to_node_to_data_fset = data
-
-        # Define primary trajectory.
-        primary_track = Trajectory(
-                name='PRIMARY', data=track_to_node_to_data_fset['PRIMARY'],
-                history=dict(), events=dict(),
-                prior_root_distn=primary_distn, Q_nx=Q_primary,
-                uniformization_factor=uniformization_factor)
-
-        # Define tolerance process trajectories.
-        tolerance_tracks = []
-        for name in all_parts:
-            track = Trajectory(
-                    name=name, data=track_to_node_to_data_fset[name],
-                    history=dict(), events=dict(),
-                    prior_root_distn=blink_distn, Q_nx=Q_blink,
-                    uniformization_factor=uniformization_factor)
-            tolerance_tracks.append(track)
-
-        # Update track data, accounting for branches with length zero.
-        tracks = [primary_track] + tolerance_tracks
-        update_track_data_for_zero_blen(T, edge_to_blen, tracks)
-        
-        # Initialize contributions of the dwell times on each edge
-        # to the expected log likelihood.
-        edge_to_ell_dwell_contrib = defaultdict(float)
-
-        # Initialize contributions of the transition events on each edge
-        # to the expected log likelihood.
-        edge_to_ell_trans_contrib = defaultdict(float)
-
-        # sample correlated trajectories using rao teh on the blinking model
-        va_vb_type_to_count = defaultdict(int)
-        nsamples = args.k * args.k
-        burnin = nsamples // 10
-        ncounted = 0
-        total_dwell_off = 0
-        total_dwell_on = 0
-        for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
-                T, root, node_to_tm,
-                Q_primary, Q_blink, Q_meta,
-                primary_track, tolerance_tracks, interaction_map)):
-            nsampled = i+1
-            print(nsampled)
-            if nsampled < burnin:
-                continue
-            # Summarize the trajectories.
-            for edge in T.edges():
-                va, vb = edge
-                for track in tol_tracks:
-                    for ev in track.events[edge]:
-                        transition = (ev.sa, ev.sb)
-                        if ev.sa == ev.sb:
-                            raise Exception(
-                                    'self-transitions should not remain')
-                        if transition == (False, True):
-                            va_vb_type_to_count[va, vb, 'on'] += 1
-                        elif transition == (True, False):
-                            va_vb_type_to_count[va, vb, 'off'] += 1
-                for ev in pri_track.events[edge]:
-                    transition = (ev.sa, ev.sb)
-                    if ev.sa == ev.sb:
-                        raise Exception(
-                                'self-transitions should not remain')
-                    if primary_to_tol[ev.sa] == primary_to_tol[ev.sb]:
-                        va_vb_type_to_count[va, vb, 'syn'] += 1
-                    else:
-                        va_vb_type_to_count[va, vb, 'non'] += 1
-            #dwell_off, dwell_on = get_blink_dwell_times(
-                    #T, node_to_tm, tol_tracks)
-            #total_dwell_off += dwell_off
-            #total_dwell_on += dwell_on
-
-            # Get the contributions of the dwell times on each edge
-            # to the expected log likelihood.
-            d = get_ell_dwell_contrib(
-                    T, root, node_to_tm,
-                    Q_primary, Q_blink, Q_meta,
-                    primary_track, tolerance_tracks, primary_to_tol)
-            for k, v in d.items():
-                edge_to_ell_dwell_contrib[k] += v
-
-            # Get the contributions of the transition events on each edge
-            # to the expected log likelihood.
-            d = get_ell_trans_contrib(
-                    T, root,
-                    Q_primary, Q_blink,
-                    primary_track, tolerance_tracks)
-            for k, v in d.items():
-                edge_to_ell_trans_contrib[k] += v
-
-            # Loop control.
-            ncounted += 1
-            if ncounted == nsamples:
-                break
-
-        # report infos
-        print('burnin:', burnin)
-        print('samples after burnin:', nsamples)
-        for va_vb_type, count in sorted(va_vb_type_to_count.items()):
-            va, vb, s = va_vb_type
-            print(va, '->', vb, s, ':', count / nsamples)
-        #print('dwell off:', total_dwell_off / nsamples)
-        #print('dwell on :', total_dwell_on / nsamples)
-        print()
-
-        # edge dwell
-        #print('edge dwell time contributions to expected log likelihood:')
-        #for edge, contrib in sorted(edge_to_ell_dwell_contrib.items()):
-            #va, vb = edge
-            #print(va, '->', vb, ':', contrib / nsamples)
-        #print()
-        print('total dwell time contribution to expected log likelihood:')
-        print(sum(edge_to_ell_dwell_contrib.values()) / nsamples)
-        print()
-
-        # edge transition
-        #print('edge transition contributions to expected log likelihood:')
-        #for edge, contrib in sorted(edge_to_ell_trans_contrib.items()):
-            #va, vb = edge
-            #print(va, '->', vb, ':', contrib / nsamples)
-        #print()
-        print('total transition event contribution to expected log likelihood:')
-        print(sum(edge_to_ell_trans_contrib.values()) / nsamples)
-        print()
-        """
 
 
 if __name__ == '__main__':
