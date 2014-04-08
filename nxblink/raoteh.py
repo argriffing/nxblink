@@ -12,13 +12,40 @@ import networkx as nx
 import nxmctree
 from nxmctree.sampling import sample_history
 
-from .graphutil import get_edge_tree
 from .util import (
         set_or_confirm_history_state, get_total_rates, get_omega,
         get_uniformized_P_nx)
+from .graphutil import get_edge_tree, partition_nodes
 from .navigation import MetaNode, gen_meta_segments
 from .trajectory import Event
 from .poisson import sample_primary_poisson_events, sample_blink_poisson_events
+
+
+def update_track_data_for_zero_blen(T, edge_to_blen, tracks):
+    """
+    Update track data, accounting for branches with length zero.
+
+    """
+    iso_node_lists = list(partition_nodes(T, edge_to_blen))
+    for track in tracks:
+        for pool in iso_node_lists:
+
+            # initialize the fset associated with the pool.
+            pool_fset = None
+            for v in pool:
+                if pool_fset is None:
+                    pool_fset = set(track.data[v])
+                else:
+                    pool_fset &= track.data[v]
+            
+            # check that the pool fset is not empty
+            if not pool_fset:
+                raise Exception('no data for the node pool '
+                        'consisting of ' + str(pool))
+
+            # set each vertex data fset to the pool data fset.
+            for v in pool:
+                track.data[v] = set(pool_fset)
 
 
 def init_blink_history(T, track):

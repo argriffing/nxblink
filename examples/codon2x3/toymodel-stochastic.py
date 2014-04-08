@@ -40,11 +40,11 @@ from nxmctree.sampling import sample_history
 import nxblink
 from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
-from nxblink.raoteh import blinking_model_rao_teh
 from nxblink.navigation import gen_segments
-from nxblink.graphutil import partition_nodes
 from nxblink.trajectory import Trajectory
 from nxblink.summary import get_ell_dwell_contrib, get_ell_trans_contrib
+from nxblink.raoteh import (
+        blinking_model_rao_teh, update_track_data_for_zero_blen)
 
 import nxmodel
 import nxmodelb
@@ -141,27 +141,8 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
         tolerance_tracks.append(track)
 
     # Update track data, accounting for branches with length zero.
-    iso_node_lists = list(partition_nodes(T, edge_to_blen))
     tracks = [primary_track] + tolerance_tracks
-    for track in tracks:
-        for pool in iso_node_lists:
-
-            # initialize the fset associated with the pool.
-            pool_fset = None
-            for v in pool:
-                if pool_fset is None:
-                    pool_fset = set(track.data[v])
-                else:
-                    pool_fset &= track.data[v]
-            
-            # check that the pool fset is not empty
-            if not pool_fset:
-                raise Exception('no data for the node pool '
-                        'consisting of ' + str(pool))
-
-            # set each vertex data fset to the pool data fset.
-            for v in pool:
-                track.data[v] = set(pool_fset)
+    update_track_data_for_zero_blen(T, edge_to_blen, tracks)
     
     # Initialize contributions of the dwell times on each edge
     # to the expected log likelihood.
