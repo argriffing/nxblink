@@ -86,6 +86,9 @@ class Trajectory(object):
                 ev.sa = None
                 ev.sb = None
 
+    def __str__(self):
+        return 'Track(%s)' % self.name
+
 
 class Event(object):
     def __init__(self, track=None, tm=None, sa=None, sb=None):
@@ -123,6 +126,10 @@ class Event(object):
             self.sb = state
         if self.sb != state:
             raise Exception('final state incompatibility')
+
+    def __repr__(self):
+        return 'Event(track=%s, tm=%s, sa=%s, sb=%s)' % (
+                self.track, self.tm, self.sa, self.sb)
 
     def __lt__(self, other):
         """

@@ -28,11 +28,14 @@ def init_blink_history(T, track):
     This defines the blink states at nodes of the tree T.
 
     """
+    # initialize the track history according to the data
     for v in T:
         if True in track.data[v]:
             blink_state = True
-        else:
+        elif False in track.data[v]:
             blink_state = False
+        else:
+            raise Exception('neither True nor False is feasible')
         track.history[v] = blink_state
 
 
@@ -86,7 +89,7 @@ def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
         events = []
         if blen:
             times = edge_tma + blen * np.random.uniform(
-                    low=1/3, high=2/3, size=diameter-1)
+                    low=1/3, high=2/3, size=diameter)
             events = [Event(track=primary_track, tm=tm) for tm in times]
         primary_track.events[edge] = events
 
@@ -286,6 +289,10 @@ def sample_primary_transitions(T, root, node_to_tm,
                 fsets.append(bg_to_fg_fset[name][state])
             fg_allowed = set.intersection(*fsets)
 
+            # Check feasibility.
+            if not fg_allowed:
+                raise Exception('no foreground state is allowed')
+
             # Use the states of the background blinking tracks,
             # together with fsets of the two meta nodes if applicable,
             # to define the set of feasible foreground states
@@ -342,6 +349,16 @@ def blinking_model_rao_teh(
     # Initialize the primary trajectory with many incomplete events.
     diameter = nx.diameter(Q_primary)
     init_incomplete_primary_events(T, node_to_tm, primary_track, diameter)
+
+    # print stuff for debugging...
+    """
+    tracks = [primary_track] + tolerance_tracks
+    for track in tracks:
+        for edge in T.edges():
+            va, vb = edge
+            print(track.name, va, vb, track.events[edge])
+    """
+
     #
     # Sample the state of the primary track.
     sample_primary_transitions(T, root, node_to_tm,
