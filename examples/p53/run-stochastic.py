@@ -242,6 +242,25 @@ def process_alignment_column(
     #print('dwell on :', total_dwell_on / nsamples)
     #print()
 
+    # report transition summaries
+    type_to_count = defaultdict(int)
+    for (va, vb, t), v in va_vb_type_to_count.items():
+        type_to_count[t] += v
+    print('expected transitions')
+    print(' expected blink transitions')
+    print('  expected off -> on        :', type_to_count['on'] / nsamples)
+    print('  expected on -> off        :', type_to_count['off'] / nsamples)
+    print('  total                     :', (
+        type_to_count['on'] + type_to_count['off']) / nsamples)
+    print(' expected codon transitions')
+    print('  expected synonymous       :', type_to_count['syn'] / nsamples)
+    print('  expected non synonymous   :', type_to_count['non'] / nsamples)
+    print('  total                     :', (
+        type_to_count['syn'] + type_to_count['non']) / nsamples)
+    print('total                       :', (
+        sum(type_to_count.values()) / nsamples))
+    print()
+
     # edge dwell
     #print('edge dwell time contributions to expected log likelihood:')
     #for edge, contrib in sorted(edge_to_ell_dwell_contrib.items()):
@@ -308,6 +327,10 @@ def main(args):
     # the branch lengths, and the map from leaf name to leaf node.
     T, root, edge_to_blen, name_to_leaf = get_tree_info()
     human_leaf = name_to_leaf['Has']
+
+    # Report a tree summary.
+    print('sum of branch lengths:', sum(edge_to_blen.values()))
+    print()
 
     # Read the alignment.
     print('reading the alignment...')
