@@ -12,7 +12,7 @@ import numpy as np
 import networkx as nx
 
 from .util import get_total_rates, get_omega, get_uniformized_P_nx
-from .navigation import gen_segments, gen_context_segments
+from .navigation import gen_context_segments
 from .trajectory import Event
 
 

@@ -134,10 +134,10 @@ def gen_segments(edge, node_to_tm, tracks):
 
     # Construct tuples corresponding to sorted events or nodes.
     # No times should coincide.
-    seq = [(ev.tm, ev.track, ev.sa, ev.sb) for ev in sorted(events)]
+    seq = [(ev.tm, ev.track, ev.sa, ev.sb) for ev in events]
     info_a = (edge_tma, None, None, None)
     info_b = (edge_tmb, None, None, None)
-    seq = [info_a] + seq + [info_b]
+    seq = [info_a] + sorted(seq) + [info_b]
 
     # Initialize track states at the beginning of the edge.
     track_to_state = dict((t.name, t.history[va]) for t in tracks)

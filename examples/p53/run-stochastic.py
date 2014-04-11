@@ -25,7 +25,7 @@ from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
-from nxblink.summary import (
+from nxblink.summary import (BlinkSummary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         blinking_model_rao_teh, update_track_data_for_zero_blen)
@@ -42,7 +42,7 @@ UNKNOWN = 'UNKNOWN'
 def process_alignment_column(
         nsamples_sqrt,
         genetic_code, primary_to_tol,
-        T, root, edge_to_blen, name_to_leaf, human_leaf,
+        T, root, edge_to_blen, edge_to_rate, name_to_leaf, human_leaf,
         Q_primary, Q_blink, Q_meta,
         primary_distn, blink_distn,
         names, codon_column,
@@ -144,7 +144,7 @@ def process_alignment_column(
 
     # Update track data, accounting for branches with length zero.
     tracks = [primary_track] + tolerance_tracks
-    update_track_data_for_zero_blen(T, edge_to_blen, tracks)
+    update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks)
 
     # Initialize the log likelihood contribution
     # of the initial state at the root.
@@ -163,10 +163,11 @@ def process_alignment_column(
     nsamples = nsamples_sqrt * nsamples_sqrt
     burnin = nsamples_sqrt
     ncounted = 0
-    total_dwell_off = 0
-    total_dwell_on = 0
+    #total_dwell_off = 0
+    #total_dwell_on = 0
+    blink_summary = BlinkSummary()
     for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
-            T, root, node_to_tm,
+            T, root, node_to_tm, edge_to_rate,
             Q_primary, Q_blink, Q_meta,
             primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
@@ -174,6 +175,13 @@ def process_alignment_column(
             print('iteration', nsampled)
         if nsampled <= burnin:
             continue
+
+        # Summarize the trajectories with respect to blink parameters.
+        blink_summary.on_sample(T, root, node_to_tm, edge_to_rate,
+                primary_track, tolerance_tracks, primary_to_tol)
+
+        #TODO dead code commented out; move to nxblink/summary.py or delete?
+        """
         # Summarize the trajectories.
         for edge in T.edges():
             va, vb = edge
@@ -226,12 +234,25 @@ def process_alignment_column(
                 primary_track, tolerance_tracks)
         for k, v in d.items():
             edge_to_ell_trans_contrib[k] += v
+        """
 
         # Loop control.
         ncounted += 1
         if ncounted == nsamples:
             break
 
+    # report infos per column
+    print(
+            blink_summary.xon_root_count,
+            blink_summary.off_root_count,
+            blink_summary.off_xon_count,
+            blink_summary.xon_off_count,
+            blink_summary.off_xon_dwell,
+            blink_summary.xon_off_dwell,
+            blink_summary.nsamples,
+            sep='\t')
+
+    """
     # report infos
     #print('burnin:', burnin)
     #print('samples after burnin:', nsamples)
@@ -304,6 +325,7 @@ def process_alignment_column(
     print('contribution of dwell times       :', ell_dwell)
     print('total                             :', (
         ell_init + ell_trans + ell_dwell))
+    """
 
 
 def main(args):
@@ -327,6 +349,10 @@ def main(args):
     # the branch lengths, and the map from leaf name to leaf node.
     T, root, edge_to_blen, name_to_leaf = get_tree_info()
     human_leaf = name_to_leaf['Has']
+
+    # Flip edge_to_blen and edge_to_rate.
+    edge_to_rate = edge_to_blen
+    edge_to_blen = dict((edge, 1) for edge in edge_to_rate)
 
     # Report a tree summary.
     print('sum of branch lengths:', sum(edge_to_blen.values()))
@@ -373,21 +399,31 @@ def main(args):
         genetic_code = app_helper.read_genetic_code(fin)
 
     # Analyze some codon columns.
+    headers = [
+            'xon_root_count',
+            'off_root_count',
+            'off_xon_count',
+            'xon_off_count',
+            'off_xon_dwell',
+            'xon_off_dwell',
+            'nsamples',
+            ]
+    print(*headers, sep='\t')
     for i, codon_column in enumerate(selected_codon_columns):
         pos = i + 1
         benign_residues = pos_to_benign_residues.get(pos, set())
         lethal_residues = pos_to_lethal_residues.get(pos, set())
-        print('codon position', pos)
+        #print('codon position', pos)
         process_alignment_column(
                 args.k,
                 genetic_code, primary_to_tol,
-                T, root, edge_to_blen, name_to_leaf, human_leaf,
+                T, root, edge_to_blen, edge_to_rate, name_to_leaf, human_leaf,
                 Q_primary, Q_blink, Q_meta,
                 primary_distn, blink_distn,
                 names, codon_column,
                 benign_residues, lethal_residues,
                 )
-        print()
+        #print()
 
 
 if __name__ == '__main__':

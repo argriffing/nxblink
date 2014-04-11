@@ -66,7 +66,7 @@ def init_blink_history(T, track):
         track.history[v] = blink_state
 
 
-def init_complete_blink_events(T, node_to_tm, track):
+def init_complete_blink_events(T, node_to_tm, edge_to_rate, track):
     """
     Add actual blink transitions near each end of the edge.
 
@@ -80,14 +80,16 @@ def init_complete_blink_events(T, node_to_tm, track):
         sb = track.history[vb]
         edge_tma = node_to_tm[va]
         edge_tmb = node_to_tm[vb]
-        blen = edge_tmb - edge_tma
+        edge_length = edge_tmb - edge_tma
+        edge_rate = edge_to_rate[edge]
+
         events = []
-        if blen:
+        if edge_length and edge_rate:
             if not sa:
-                tma = edge_tma + blen * np.random.uniform(0, 1/3)
+                tma = edge_tma + edge_length * np.random.uniform(0, 1/3)
                 events.append(Event(track=track, tm=tma, sa=sa, sb=True))
             if not sb:
-                tmb = edge_tma + blen * np.random.uniform(2/3, 1)
+                tmb = edge_tma + edge_length * np.random.uniform(2/3, 1)
                 events.append(Event(track=track, tm=tmb, sa=True, sb=sb))
         track.events[edge] = events
 
@@ -101,10 +103,10 @@ def init_incomplete_primary_events(T, node_to_tm, edge_to_rate,
     ----------
     T : nx tree
         tree
-    edge_to_rate : dict
-        x
     node_to_tm : dict
         maps nodes to times
+    edge_to_rate : dict
+        x
     primary_track : Trajectory
         current state of the track
     diameter : int
@@ -119,32 +121,37 @@ def init_incomplete_primary_events(T, node_to_tm, edge_to_rate,
     """
     ev_to_P_nx = {}
     for edge in T.edges():
-        
-        # Make a plausible transition probability matrix.
-        # It does not need to be carefully constructed,
-        # because we are using it only to make an initial feasible trajectory.
-        Q_local = primary_track.Q_nx.copy()
-        for sa, sb in Q_local.edges():
-            Q_local[sa][sb]['weight'] *= edge_to_rate[edge]
-        local_rates = get_total_rates(Q_local)
-        local_omega = get_omega(local_rates, 2)
-        P_local = get_uniformized_P_nx(Q_local, local_rates, local_omega)
-
-        # Make the events.
         va, vb = edge
         edge_tma = node_to_tm[va]
         edge_tmb = node_to_tm[vb]
-        blen = edge_tmb - edge_tma
+        edge_length = edge_tmb - edge_tma
+        edge_rate = edge_to_rate[edge]
+
         events = []
-        if blen:
-            times = edge_tma + blen * np.random.uniform(
+        if edge_length and edge_rate:
+
+            # Make a plausible transition probability matrix.
+            # It does not need to be carefully constructed,
+            # because we are using it only to make an initial
+            # feasible trajectory.
+            Q_local = primary_track.Q_nx.copy()
+            for sa, sb in Q_local.edges():
+                Q_local[sa][sb]['weight'] *= edge_rate
+            local_rates = get_total_rates(Q_local)
+            local_omega = get_omega(local_rates, 2)
+            P_local = get_uniformized_P_nx(Q_local, local_rates, local_omega)
+
+            # Make the events.
+            times = edge_tma + edge_length * np.random.uniform(
                     low=1/3, high=2/3, size=diameter)
             events = [Event(track=primary_track, tm=tm) for tm in times]
-        primary_track.events[edge] = events
 
-        # Record the transition matrix associated with each event.
-        for ev in events:
-            ev_to_P_nx[ev] = P_local
+            # Record the transition matrix associated with each event.
+            for ev in events:
+                ev_to_P_nx[ev] = P_local
+
+        # Set the primary track events.
+        primary_track.events[edge] = events
 
     # Return the map that associates a transition probability matrix
     # to each of the events.
@@ -379,7 +386,7 @@ def blinking_model_rao_teh(
     # Initialize blink history and events.
     for track in tolerance_tracks:
         init_blink_history(T, track)
-        init_complete_blink_events(T, node_to_tm, track)
+        init_complete_blink_events(T, node_to_tm, edge_to_rate, track)
         track.remove_self_transitions()
 
     # Initialize the primary trajectory with many incomplete events.
@@ -411,10 +418,12 @@ def blinking_model_rao_teh(
         ev_to_P_nx = {}
         for edge in T.edges():
             edge_rate = edge_to_rate[edge]
-            edge_ev_to_P_nx = sample_primary_poisson_events(
-                    edge, edge_rate, node_to_tm,
-                    primary_track, tolerance_tracks, interaction_map['PRIMARY'])
-            ev_to_P_nx.update(edge_ev_to_P_nx)
+            if edge_rate:
+                edge_ev_to_P_nx = sample_primary_poisson_events(
+                        edge, edge_rate, node_to_tm,
+                        primary_track, tolerance_tracks,
+                        interaction_map['PRIMARY'])
+                ev_to_P_nx.update(edge_ev_to_P_nx)
         # clear state labels for the primary track
         primary_track.clear_state_labels()
         # sample state transitions for the primary track
@@ -430,10 +439,11 @@ def blinking_model_rao_teh(
             ev_to_P_nx = {}
             for edge in T.edges():
                 edge_rate = edge_to_rate[edge]
-                edge_ev_to_P_nx = sample_blink_poisson_events(
-                        edge, edge_rate, node_to_tm,
-                        track, primary_track, interaction_map[name])
-                ev_to_P_nx.update(edge_ev_to_P_nx)
+                if edge_rate:
+                    edge_ev_to_P_nx = sample_blink_poisson_events(
+                            edge, edge_rate, node_to_tm,
+                            track, primary_track, interaction_map[name])
+                    ev_to_P_nx.update(edge_ev_to_P_nx)
             # clear state labels for this blink track
             track.clear_state_labels()
             # sample state transitions for this blink track

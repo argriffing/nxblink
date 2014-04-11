@@ -26,7 +26,10 @@ def set_or_confirm_history_state(node_to_state, node, state):
 
 
 def get_omega(total_rates, uniformization_factor):
-    return uniformization_factor * max(total_rates.values())
+    max_rate = max(total_rates.values())
+    if not max_rate:
+        raise Exception('zero max rate; total_rates : ' + str(total_rates))
+    return uniformization_factor * max_rate
 
 
 def get_poisson_rates(total_rates, omega):

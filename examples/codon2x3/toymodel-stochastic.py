@@ -42,7 +42,7 @@ from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import Trajectory
-from nxblink.summary import (
+from nxblink.summary import (BlinkSummary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         blinking_model_rao_teh, update_track_data_for_zero_blen)
@@ -176,6 +176,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     ncounted = 0
     total_dwell_off = 0
     total_dwell_on = 0
+    blink_summary = BlinkSummary()
     for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
             T, root, node_to_tm, edge_to_rate,
             Q_primary, Q_blink, Q_meta,
@@ -183,6 +184,11 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
         nsampled = i+1
         if nsampled <= burnin:
             continue
+
+        # Compute a summary.
+        blink_summary.on_sample(T, root, node_to_tm, edge_to_rate,
+                primary_track, tolerance_tracks, primary_to_tol)
+
         # Summarize the trajectories.
         for edge in T.edges():
             va, vb = edge
@@ -277,6 +283,18 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     print('dwell off:', total_dwell_off / nsamples)
     print('dwell on :', total_dwell_on / nsamples)
+
+    # report infos per column
+    print(
+            blink_summary.xon_root_count,
+            blink_summary.off_root_count,
+            blink_summary.off_xon_count,
+            blink_summary.xon_off_count,
+            blink_summary.off_xon_dwell,
+            blink_summary.xon_off_dwell,
+            blink_summary.nsamples,
+            sep='\t')
+    print()
 
 
 def main(args):
