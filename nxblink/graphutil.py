@@ -1,6 +1,10 @@
 """
 Utility functions that are not in networkx.
 
+This module cares about piecewise homogeneity of the process.
+In particular, partition_nodes needs to look for edges
+with zero rate scaling factor.
+
 """
 from __future__ import division, print_function, absolute_import
 
@@ -28,7 +32,7 @@ def get_edge_tree(T, root):
     return T_dual, dual_root
 
 
-def partition_nodes(T, edge_to_blen):
+def partition_nodes(T, edge_to_blen, edge_to_rate):
     """
     Partition nodes of a tree.
 
@@ -42,6 +46,8 @@ def partition_nodes(T, edge_to_blen):
         The tree.
     edge_to_blen : dict
         Maps directed edges of T to non-negative branch lengths.
+    edge_to_rate : dict
+        Maps directed edges of T to non-negative rate scaling factors.
 
     Returns
     -------
@@ -53,7 +59,9 @@ def partition_nodes(T, edge_to_blen):
     G = nx.Graph()
     G.add_nodes_from(T)
     for edge in T.edges():
-        if not edge_to_blen[edge]:
+        blen = edge_to_blen[edge]
+        rate = edge_to_rate[edge]
+        if (not blen) or (not rate):
             G.add_edge(*edge)
 
     # Return the connected components of the graph.

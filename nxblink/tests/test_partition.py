@@ -14,10 +14,16 @@ def test_partition():
     T.add_edge('a', 'b')
     T.add_edge('b', 'c')
     T.add_node('d')
-    edge_to_blen = {
+    d_sparse = {
             ('a', 'b') : 0,
             ('b', 'c') : 1}
-    actual = sorted(sorted(x) for x in partition_nodes(T, edge_to_blen))
+    d_dense = {
+            ('a', 'b') : 1,
+            ('b', 'c') : 1}
+    edge_to_blen = d_sparse
+    edge_to_rate = d_dense
+    node_lists = partition_nodes(T, edge_to_blen, edge_to_rate)
+    actual = sorted(sorted(x) for x in node_lists)
     desired = sorted(sorted(x) for x in [['a', 'b'], ['c'], ['d']])
     assert_equal(actual, desired)
 

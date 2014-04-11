@@ -3,6 +3,8 @@ Functions related to an explicitly compound yet sparse Markov process.
 
 It is designed for testing, so it has a hardcoded state space.
 
+This module does not need to care about piecewise homogeneity of the process.
+
 """
 from __future__ import division, print_function, absolute_import
 

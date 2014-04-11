@@ -21,12 +21,12 @@ from .trajectory import Event
 from .poisson import sample_primary_poisson_events, sample_blink_poisson_events
 
 
-def update_track_data_for_zero_blen(T, edge_to_blen, tracks):
+def update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks):
     """
     Update track data, accounting for branches with length zero.
 
     """
-    iso_node_lists = list(partition_nodes(T, edge_to_blen))
+    iso_node_lists = list(partition_nodes(T, edge_to_blen, edge_to_rate))
     for track in tracks:
         for pool in iso_node_lists:
 
@@ -92,7 +92,8 @@ def init_complete_blink_events(T, node_to_tm, track):
         track.events[edge] = events
 
 
-def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
+def init_incomplete_primary_events(T, node_to_tm, edge_to_rate,
+        primary_track, diameter):
     """
     This function assigns potential transition times but not the states.
 
@@ -100,6 +101,8 @@ def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
     ----------
     T : nx tree
         tree
+    edge_to_rate : dict
+        x
     node_to_tm : dict
         maps nodes to times
     primary_track : Trajectory
@@ -107,8 +110,27 @@ def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
     diameter : int
         directed unweighted diameter of the primary transition rate matrix
 
+    Returns
+    -------
+    ev_to_P_nx : dict
+        Map from new poisson events to corresponding
+        uniformized transition matrices.
+
     """
+    ev_to_P_nx = {}
     for edge in T.edges():
+        
+        # Make a plausible transition probability matrix.
+        # It does not need to be carefully constructed,
+        # because we are using it only to make an initial feasible trajectory.
+        Q_local = primary_track.Q_nx.copy()
+        for sa, sb in Q_local.edges():
+            Q_local[sa][sb]['weight'] *= edge_to_rate[edge]
+        local_rates = get_total_rates(Q_local)
+        local_omega = get_omega(local_rates, 2)
+        P_local = get_uniformized_P_nx(Q_local, local_rates, local_omega)
+
+        # Make the events.
         va, vb = edge
         edge_tma = node_to_tm[va]
         edge_tmb = node_to_tm[vb]
@@ -119,6 +141,14 @@ def init_incomplete_primary_events(T, node_to_tm, primary_track, diameter):
                     low=1/3, high=2/3, size=diameter)
             events = [Event(track=primary_track, tm=tm) for tm in times]
         primary_track.events[edge] = events
+
+        # Record the transition matrix associated with each event.
+        for ev in events:
+            ev_to_P_nx[ev] = P_local
+
+    # Return the map that associates a transition probability matrix
+    # to each of the events.
+    return ev_to_P_nx
 
 
 def get_node_to_meta(T, root, node_to_tm, fg_track):
@@ -178,7 +208,7 @@ def resample_using_meta_node_tree(root, meta_node_tree, mroot,
             mb.set_sa(state)
 
 
-def sample_blink_transitions(T, root, node_to_tm,
+def sample_blink_transitions(T, root, node_to_tm, edge_to_rate, ev_to_P_nx,
         fg_track, bg_tracks, bg_to_fg_fset, Q_meta):
     """
     Sample the history (nodes to states) and the events (edge to event list).
@@ -204,13 +234,15 @@ def sample_blink_transitions(T, root, node_to_tm,
     for edge in T.edges():
 
         for segment, bg_track_to_state, fg_allowed in gen_meta_segments(
-                edge, node_to_meta, fg_track, bg_tracks, bg_to_fg_fset):
+                edge, node_to_meta, ev_to_P_nx,
+                fg_track, bg_tracks, bg_to_fg_fset):
             ma, mb = segment
 
+            #TODO use uniformized transition matrix
             # Update the ma transition matrix if it is a foreground event.
             # For the blink tracks use the generic transition matrix.
-            if ma.track is fg_track:
-                ma.P_nx = fg_track.P_nx
+            #if ma.track is fg_track:
+                #ma.P_nx = fg_track.P_nx
 
             # Get the set of states allowed by data and background interaction.
             fsets = []
@@ -241,7 +273,7 @@ def sample_blink_transitions(T, root, node_to_tm,
             if True in fg_allowed:
                 if Q_meta.has_edge(pri_state, fg_track.name):
                     rate_sum = Q_meta[pri_state][fg_track.name]['weight']
-                    amount = rate_sum * (mb.tm - ma.tm)
+                    amount = rate_sum * edge_to_rate[edge] * (mb.tm - ma.tm)
                     lmap[True] = np.exp(-amount)
                 else:
                     lmap[True] = 1
@@ -258,7 +290,7 @@ def sample_blink_transitions(T, root, node_to_tm,
             fg_track, node_to_data_lmap)
 
 
-def sample_primary_transitions(T, root, node_to_tm,
+def sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
         fg_track, bg_tracks, bg_to_fg_fset):
     """
     Sample the history (nodes to states) and the events (edge to event list).
@@ -284,12 +316,19 @@ def sample_primary_transitions(T, root, node_to_tm,
     for edge in T.edges():
 
         for segment, bg_track_to_state, fg_allowed in gen_meta_segments(
-                edge, node_to_meta, fg_track, bg_tracks, bg_to_fg_fset):
+                edge, node_to_meta, ev_to_P_nx,
+                fg_track, bg_tracks, bg_to_fg_fset):
             ma, mb = segment
 
+            """
             # Update the ma transition matrix if it is a foreground event.
-            if ma.track is fg_track:
+            #if ma.track is fg_track:
 
+                #TODO use uniformized transition matrix
+                # Instead of the following code,
+                # use the uniformized rate matrix associated
+                # with the event
+                #
                 # Uniformize the transition matrix
                 # according to the background states.
                 Q_local = nx.DiGraph()
@@ -306,6 +345,7 @@ def sample_primary_transitions(T, root, node_to_tm,
                 P_local = get_uniformized_P_nx(
                         Q_local, local_rates, local_omega)
                 ma.P_nx = P_local
+            """
 
             # Get the set of states allowed by data and background interaction.
             fsets = []
@@ -340,7 +380,7 @@ def sample_primary_transitions(T, root, node_to_tm,
 
 
 def blinking_model_rao_teh(
-        T, root, node_to_tm,
+        T, root, node_to_tm, edge_to_rate,
         Q_primary, Q_blink, Q_meta,
         primary_track, tolerance_tracks, interaction_map):
     """
@@ -352,6 +392,8 @@ def blinking_model_rao_teh(
     root : x
         x
     node_to_tm : x
+        x
+    edge_to_rate : x
         x
     Q_primary : x
         x
@@ -375,7 +417,8 @@ def blinking_model_rao_teh(
 
     # Initialize the primary trajectory with many incomplete events.
     diameter = nx.diameter(Q_primary)
-    init_incomplete_primary_events(T, node_to_tm, primary_track, diameter)
+    ev_to_P_nx = init_incomplete_primary_events(T, node_to_tm, edge_to_rate,
+            primary_track, diameter)
 
     # print stuff for debugging...
     """
@@ -388,7 +431,7 @@ def blinking_model_rao_teh(
 
     #
     # Sample the state of the primary track.
-    sample_primary_transitions(T, root, node_to_tm,
+    sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
             primary_track, tolerance_tracks, interaction_map['PRIMARY'])
     #
     # Remove self-transition events from the primary track.
@@ -398,13 +441,17 @@ def blinking_model_rao_teh(
     while True:
 
         # add poisson events to the primary track
+        ev_to_P_nx = {}
         for edge in T.edges():
-            sample_primary_poisson_events(edge, node_to_tm,
+            edge_rate = edge_to_rate[edge]
+            edge_ev_to_P_nx = sample_primary_poisson_events(
+                    edge, edge_rate, node_to_tm,
                     primary_track, tolerance_tracks, interaction_map['PRIMARY'])
+            ev_to_P_nx.update(edge_ev_to_P_nx)
         # clear state labels for the primary track
         primary_track.clear_state_labels()
         # sample state transitions for the primary track
-        sample_primary_transitions(T, root, node_to_tm,
+        sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
                 primary_track, tolerance_tracks, interaction_map['PRIMARY'])
         # remove self transitions for the primary track
         primary_track.remove_self_transitions()
@@ -413,9 +460,12 @@ def blinking_model_rao_teh(
         for track in tolerance_tracks:
             name = track.name
             # add poisson events to this blink track
+            ev_to_P_nx = {}
             for edge in T.edges():
-                sample_blink_poisson_events(edge, node_to_tm,
+                edge_ev_to_P_nx = sample_blink_poisson_events(
+                        edge, node_to_tm,
                         track, [primary_track], interaction_map[name])
+                ev_to_P_nx.update(edge_ev_to_P_nx)
             # clear state labels for this blink track
             track.clear_state_labels()
             # sample state transitions for this blink track

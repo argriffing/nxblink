@@ -90,6 +90,9 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     edge_to_blen = model.get_edge_to_blen()
     node_to_tm = get_node_to_tm(T, root, edge_to_blen)
 
+    # Initialize the map from edge to rate.
+    edge_to_rate = dict((k, 1) for k in edge_to_blen)
+
     # Define the uniformization factor.
     uniformization_factor = 2
 
@@ -143,7 +146,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     # Update track data, accounting for branches with length zero.
     tracks = [primary_track] + tolerance_tracks
-    update_track_data_for_zero_blen(T, edge_to_blen, tracks)
+    update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks)
 
     # Initialize the log likelihood contribution
     # of the initial state at the root.
@@ -169,7 +172,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     total_dwell_off = 0
     total_dwell_on = 0
     for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
-            T, root, node_to_tm,
+            T, root, node_to_tm, edge_to_rate,
             Q_primary, Q_blink, Q_meta,
             primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1

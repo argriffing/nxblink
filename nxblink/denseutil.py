@@ -12,6 +12,8 @@ using networkx structures and algorithms, whereas a more appropriate package
 for this module would use numpy and scipy structures and algorithms
 to analyze dense rate matrices, transition matrices, and distributions.
 
+This module does not need to care about piecewise homogeneity of the process.
+
 """
 from __future__ import division, print_function, absolute_import
 

@@ -4,6 +4,8 @@ Functions specifying the blinking model.
 Uniformization, sampling, inference, summary statistics, and likelihood
 are out of scope for this module.
 
+This module does not need to care about piecewise homogeneity of the process.
+
 """
 from __future__ import division, print_function, absolute_import
 
