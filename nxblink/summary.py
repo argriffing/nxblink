@@ -37,7 +37,7 @@ def get_ell_init_contrib(
 
 
 def get_ell_dwell_contrib(
-        T, root, node_to_tm,
+        T, root, node_to_tm, edge_to_rate,
         Q_primary, Q_blink, Q_meta,
         primary_track, tolerance_tracks, primary_to_tol):
     """
@@ -82,7 +82,7 @@ def get_ell_dwell_contrib(
                         rate += Q_blink[False][True]['weight']
 
             # Accumulate the contribution of the segment.
-            contrib += -(rate * (tmb - tma))
+            contrib += -(edge_to_rate[edge] * rate * (tmb - tma))
 
         # Store the edge contribution.
         edge_to_contrib[edge] = contrib
@@ -92,7 +92,7 @@ def get_ell_dwell_contrib(
 
 
 def get_ell_trans_contrib(
-        T, root,
+        T, root, edge_to_rate,
         Q_primary, Q_blink,
         primary_track, tolerance_tracks):
     """
@@ -116,7 +116,7 @@ def get_ell_trans_contrib(
                         rate = Q_blink[ev.sa][ev.sb]['weight']
                     else:
                         raise Exception
-                contrib += math.log(rate)
+                contrib += math.log(edge_to_rate[edge] * rate)
         edge_to_contrib[edge] = contrib
     return edge_to_contrib
 

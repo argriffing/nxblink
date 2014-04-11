@@ -88,10 +88,15 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     # It is the expected number of primary process transitions
     # along the branch conditional on all tolerance classes being tolerated.
     edge_to_blen = model.get_edge_to_blen()
-    node_to_tm = get_node_to_tm(T, root, edge_to_blen)
 
     # Initialize the map from edge to rate.
     edge_to_rate = dict((k, 1) for k in edge_to_blen)
+
+    #TODO for testing
+    edge_to_blen, edge_to_rate = edge_to_rate, edge_to_blen
+
+    # Convert the branch length map to a node time map.
+    node_to_tm = get_node_to_tm(T, root, edge_to_blen)
 
     # Define the uniformization factor.
     uniformization_factor = 2
@@ -213,7 +218,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
         # Get the contributions of the dwell times on each edge
         # to the expected log likelihood.
         d = get_ell_dwell_contrib(
-                T, root, node_to_tm,
+                T, root, node_to_tm, edge_to_rate,
                 Q_primary, Q_blink, Q_meta,
                 primary_track, tolerance_tracks, primary_to_tol)
         for k, v in d.items():
@@ -222,7 +227,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
         # Get the contributions of the transition events on each edge
         # to the expected log likelihood.
         d = get_ell_trans_contrib(
-                T, root,
+                T, root, edge_to_rate,
                 Q_primary, Q_blink,
                 primary_track, tolerance_tracks)
         for k, v in d.items():
