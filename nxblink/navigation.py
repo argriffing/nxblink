@@ -246,7 +246,7 @@ def gen_context_segments(edge, node_to_tm, bg_tracks, fg_track):
         # is a foreground transition event
         # then update the foreground state
         # and add the foreground event to the list.
-        if eva.track is not None and eva.track is fg_track:
+        if eva is not None and eva.track is fg_track:
             if eva.sa == eva.sb:
                 raise Exception('foreground self transition')
             if eva.sa != fg_state:

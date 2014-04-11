@@ -462,14 +462,17 @@ def blinking_model_rao_teh(
             # add poisson events to this blink track
             ev_to_P_nx = {}
             for edge in T.edges():
+                edge_rate = edge_to_rate[edge]
                 edge_ev_to_P_nx = sample_blink_poisson_events(
-                        edge, node_to_tm,
-                        track, [primary_track], interaction_map[name])
+                        edge, edge_rate, node_to_tm,
+                        track, primary_track, interaction_map[name])
                 ev_to_P_nx.update(edge_ev_to_P_nx)
             # clear state labels for this blink track
             track.clear_state_labels()
             # sample state transitions for this blink track
-            sample_blink_transitions(T, root, node_to_tm,
+            sample_blink_transitions(
+                    T, root, node_to_tm,
+                    edge_to_rate, ev_to_P_nx,
                     track, [primary_track], interaction_map[name], Q_meta)
             # remove self transitions for this blink track
             track.remove_self_transitions()
