@@ -238,12 +238,6 @@ def sample_blink_transitions(T, root, node_to_tm, edge_to_rate, ev_to_P_nx,
                 fg_track, bg_tracks, bg_to_fg_fset):
             ma, mb = segment
 
-            #TODO use uniformized transition matrix
-            # Update the ma transition matrix if it is a foreground event.
-            # For the blink tracks use the generic transition matrix.
-            #if ma.track is fg_track:
-                #ma.P_nx = fg_track.P_nx
-
             # Get the set of states allowed by data and background interaction.
             fsets = []
             for m in segment:
@@ -319,33 +313,6 @@ def sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
                 edge, node_to_meta, ev_to_P_nx,
                 fg_track, bg_tracks, bg_to_fg_fset):
             ma, mb = segment
-
-            """
-            # Update the ma transition matrix if it is a foreground event.
-            #if ma.track is fg_track:
-
-                #TODO use uniformized transition matrix
-                # Instead of the following code,
-                # use the uniformized rate matrix associated
-                # with the event
-                #
-                # Uniformize the transition matrix
-                # according to the background states.
-                Q_local = nx.DiGraph()
-                for s in fg_track.Q_nx:
-                    Q_local.add_node(s)
-                for sa, sb in fg_track.Q_nx.edges():
-                    if sb in fg_allowed:
-                        rate = fg_track.Q_nx[sa][sb]['weight']
-                        Q_local.add_edge(sa, sb, weight=rate)
-
-                # Compute the total local rates.
-                local_rates = get_total_rates(Q_local)
-                local_omega = get_omega(local_rates, 2)
-                P_local = get_uniformized_P_nx(
-                        Q_local, local_rates, local_omega)
-                ma.P_nx = P_local
-            """
 
             # Get the set of states allowed by data and background interaction.
             fsets = []
