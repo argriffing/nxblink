@@ -10,6 +10,7 @@ from __future__ import division, print_function, absolute_import
 
 from StringIO import StringIO
 from collections import defaultdict
+import itertools
 import functools
 import argparse
 import sys
@@ -41,6 +42,7 @@ UNKNOWN = 'UNKNOWN'
 
 
 def process_alignment_column(
+        blink_summary,
         nsamples_sqrt,
         genetic_code, primary_to_tol,
         T, root, edge_to_blen, edge_to_rate, name_to_leaf, human_leaf,
@@ -147,33 +149,18 @@ def process_alignment_column(
     tracks = [primary_track] + tolerance_tracks
     update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks)
 
-    # Initialize the log likelihood contribution
-    # of the initial state at the root.
-    ell_init_contrib = 0
-    
-    # Initialize contributions of the dwell times on each edge
-    # to the expected log likelihood.
-    edge_to_ell_dwell_contrib = defaultdict(float)
-
-    # Initialize contributions of the transition events on each edge
-    # to the expected log likelihood.
-    edge_to_ell_trans_contrib = defaultdict(float)
-
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
     nsamples = nsamples_sqrt * nsamples_sqrt
     burnin = nsamples_sqrt
     ncounted = 0
-    #total_dwell_off = 0
-    #total_dwell_on = 0
-    blink_summary = BlinkSummary()
     for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
             T, root, node_to_tm, edge_to_rate,
             Q_primary, Q_blink, Q_meta,
             primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
-        if nsampled % nsamples_sqrt == 0:
-            print('iteration', nsampled)
+        #if nsampled % nsamples_sqrt == 0:
+            #print('iteration', nsampled)
         if nsampled <= burnin:
             continue
 
@@ -181,162 +168,10 @@ def process_alignment_column(
         blink_summary.on_sample(T, root, node_to_tm, edge_to_rate,
                 primary_track, tolerance_tracks, primary_to_tol)
 
-        #TODO dead code commented out; move to nxblink/summary.py or delete?
-        """
-        # Summarize the trajectories.
-        for edge in T.edges():
-            va, vb = edge
-            for track in tol_tracks:
-                for ev in track.events[edge]:
-                    transition = (ev.sa, ev.sb)
-                    if ev.sa == ev.sb:
-                        raise Exception(
-                                'self-transitions should not remain')
-                    if transition == (False, True):
-                        va_vb_type_to_count[va, vb, 'on'] += 1
-                    elif transition == (True, False):
-                        va_vb_type_to_count[va, vb, 'off'] += 1
-            for ev in pri_track.events[edge]:
-                transition = (ev.sa, ev.sb)
-                if ev.sa == ev.sb:
-                    raise Exception(
-                            'self-transitions should not remain')
-                if primary_to_tol[ev.sa] == primary_to_tol[ev.sb]:
-                    va_vb_type_to_count[va, vb, 'syn'] += 1
-                else:
-                    va_vb_type_to_count[va, vb, 'non'] += 1
-        #dwell_off, dwell_on = get_blink_dwell_times(
-                #T, node_to_tm, tol_tracks)
-        #total_dwell_off += dwell_off
-        #total_dwell_on += dwell_on
-
-        # Get the contribution of the prior probabilty of the root state
-        # to the expected log likelihood.
-        ll_init = get_ell_init_contrib(
-                root,
-                primary_distn, blink_distn,
-                primary_track, tolerance_tracks, primary_to_tol)
-        ell_init_contrib += ll_init
-
-        # Get the contributions of the dwell times on each edge
-        # to the expected log likelihood.
-        d = get_ell_dwell_contrib(
-                T, root, node_to_tm,
-                Q_primary, Q_blink, Q_meta,
-                primary_track, tolerance_tracks, primary_to_tol)
-        for k, v in d.items():
-            edge_to_ell_dwell_contrib[k] += v
-
-        # Get the contributions of the transition events on each edge
-        # to the expected log likelihood.
-        d = get_ell_trans_contrib(
-                T, root,
-                Q_primary, Q_blink,
-                primary_track, tolerance_tracks)
-        for k, v in d.items():
-            edge_to_ell_trans_contrib[k] += v
-        """
-
         # Loop control.
         ncounted += 1
         if ncounted == nsamples:
             break
-
-    # report infos per column
-    print(
-            blink_summary.xon_root_count,
-            blink_summary.off_root_count,
-            blink_summary.off_xon_count,
-            blink_summary.xon_off_count,
-            blink_summary.off_xon_dwell,
-            blink_summary.xon_off_dwell,
-            blink_summary.nsamples,
-            sep='\t')
-    ml_rate_on, ml_rate_off =  get_blink_rate_mle(
-            blink_summary.xon_root_count,
-            blink_summary.off_root_count,
-            blink_summary.off_xon_count,
-            blink_summary.xon_off_count,
-            blink_summary.off_xon_dwell,
-            blink_summary.xon_off_dwell,
-            )
-    print('ml rate on:', ml_rate_on)
-    print('ml rate off:', ml_rate_off)
-
-    """
-    # report infos
-    #print('burnin:', burnin)
-    #print('samples after burnin:', nsamples)
-    #for va_vb_type, count in sorted(va_vb_type_to_count.items()):
-        #va, vb, s = va_vb_type
-        #print(va, '->', vb, s, ':', count / nsamples)
-    #print('dwell off:', total_dwell_off / nsamples)
-    #print('dwell on :', total_dwell_on / nsamples)
-    #print()
-
-    # report transition summaries
-    type_to_count = defaultdict(int)
-    for (va, vb, t), v in va_vb_type_to_count.items():
-        type_to_count[t] += v
-    print('expected transitions')
-    print(' expected blink transitions')
-    print('  expected off -> on        :', type_to_count['on'] / nsamples)
-    print('  expected on -> off        :', type_to_count['off'] / nsamples)
-    print('  total                     :', (
-        type_to_count['on'] + type_to_count['off']) / nsamples)
-    print(' expected codon transitions')
-    print('  expected synonymous       :', type_to_count['syn'] / nsamples)
-    print('  expected non synonymous   :', type_to_count['non'] / nsamples)
-    print('  total                     :', (
-        type_to_count['syn'] + type_to_count['non']) / nsamples)
-    print('total                       :', (
-        sum(type_to_count.values()) / nsamples))
-    print()
-
-    # edge dwell
-    #print('edge dwell time contributions to expected log likelihood:')
-    #for edge, contrib in sorted(edge_to_ell_dwell_contrib.items()):
-        #va, vb = edge
-        #print(va, '->', vb, ':', contrib / nsamples)
-    #print()
-    total_ell_dwell_contrib = sum(edge_to_ell_dwell_contrib.values())
-    #print('total dwell time contribution to expected log likelihood:')
-    #print(total_ell_dwell_contrib / nsamples)
-    #print()
-
-    # edge transition
-    #print('edge transition contributions to expected log likelihood:')
-    #for edge, contrib in sorted(edge_to_ell_trans_contrib.items()):
-        #va, vb = edge
-        #print(va, '->', vb, ':', contrib / nsamples)
-    #print()
-    total_ell_trans_contrib = sum(edge_to_ell_trans_contrib.values())
-    #print('transition event contribution to expected log likelihood:')
-    #print(total_ell_trans_contrib / nsamples)
-    #print()
-
-    total_ell_init_contrib = ell_init_contrib
-    #print('root state contribution to expected log likelihood:')
-    #print(total_ell_init_contrib / nsamples)
-    #print()
-
-    #print('expected log likelihood for this alignment column:')
-    #print(sum((
-        #total_ell_dwell_contrib,
-        #total_ell_trans_contrib,
-        #total_ell_init_contrib)) / nsamples)
-    #print()
-
-    ell_init = total_ell_init_contrib / nsamples
-    ell_trans = total_ell_trans_contrib / nsamples
-    ell_dwell = total_ell_dwell_contrib / nsamples
-    print('sample average log likelihood:')
-    print('contribution of root state        :', ell_init)
-    print('contribution of transition counts :', ell_trans)
-    print('contribution of dwell times       :', ell_dwell)
-    print('total                             :', (
-        ell_init + ell_trans + ell_dwell))
-    """
 
 
 def main(args):
@@ -346,71 +181,6 @@ def main(args):
     # Specify the model.
     # Define the rate matrix for a single blinking trajectory,
     # and the prior blink state distribution.
-
-    # Initial blink rate guess.
-    #RATE_ON = 1.0
-    #RATE_OFF = 1.0
-
-    # Restart using different blinking rates.
-    # The following are all for the first p53 column with k=10 sqrt samples.
-    #RATE_ON = 0.1
-    #RATE_OFF = 0.2
-
-    # Second iteration of EM.
-    #RATE_ON = 0.36
-    #RATE_OFF = 0.15
-
-    # Another iteration of EM.
-    #RATE_ON = 0.56
-    #RATE_OFF = 0.12
-
-    # Another iteration of EM.
-    #RATE_ON = 0.74
-    #RATE_OFF = 0.10
-
-    # Another iteration of EM.
-    #RATE_ON = 0.90
-    #RATE_OFF = 0.09
-
-    # Another iteration of EM.
-    #RATE_ON = 1.00
-    #RATE_OFF = 0.08
-
-    # Another iteration of EM.
-    #RATE_ON = 1.10
-    #RATE_OFF = 0.07
-
-    # Another iteration of EM.
-    #RATE_ON = 1.26
-    #RATE_OFF = 0.06
-
-    # Another iteration of EM.
-    #RATE_ON = 1.38
-    #RATE_OFF = 0.06
-
-    # Another iteration of EM.
-    #RATE_ON = 1.45
-    #RATE_OFF = 0.06
-
-    # Another iteration of EM.
-    #RATE_ON = 1.611
-    #RATE_OFF = 0.057
-
-    # Another iteration of EM.
-    #RATE_ON = 1.613
-    #RATE_OFF = 0.053
-
-    # Another iteration of EM.
-    RATE_ON = 1.7
-    RATE_OFF = 0.05
-
-    P_ON = RATE_ON / (RATE_ON + RATE_OFF)
-    P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)
-    primary_to_tol = get_primary_to_tol()
-    Q_primary, primary_distn = get_Q_primary_and_distn()
-    Q_blink = get_Q_blink(rate_on=RATE_ON, rate_off=RATE_OFF)
-    blink_distn = {False : P_OFF, True : P_ON}
-    Q_meta = get_Q_meta(Q_primary, primary_to_tol)
 
     # Specify the tree shape, the root,
     # the branch lengths, and the map from leaf name to leaf node.
@@ -465,32 +235,57 @@ def main(args):
     with open('universal.code.txt') as fin:
         genetic_code = app_helper.read_genetic_code(fin)
 
-    # Analyze some codon columns.
-    headers = [
-            'xon_root_count',
-            'off_root_count',
-            'off_xon_count',
-            'xon_off_count',
-            'off_xon_dwell',
-            'xon_off_dwell',
-            'nsamples',
-            ]
-    print(*headers, sep='\t')
-    for i, codon_column in enumerate(selected_codon_columns):
-        pos = i + 1
-        benign_residues = pos_to_benign_residues.get(pos, set())
-        lethal_residues = pos_to_lethal_residues.get(pos, set())
-        #print('codon position', pos)
-        process_alignment_column(
-                args.k,
-                genetic_code, primary_to_tol,
-                T, root, edge_to_blen, edge_to_rate, name_to_leaf, human_leaf,
-                Q_primary, Q_blink, Q_meta,
-                primary_distn, blink_distn,
-                names, codon_column,
-                benign_residues, lethal_residues,
+    # Initialize some model parameters that do not depend on blinking rates.
+    primary_to_tol = get_primary_to_tol()
+    Q_primary, primary_distn = get_Q_primary_and_distn()
+    Q_meta = get_Q_meta(Q_primary, primary_to_tol)
+
+    # Initialize the blinking rates.
+    rate_on = 1.0
+    rate_off = 1.0
+
+    # Outer EM loop.
+    for em_iteration in itertools.count(1):
+
+        # Report the current blinking rates.
+        print('sampling histories using the following rates:')
+        print('rate on:', rate_on)
+        print('rate off:', rate_off)
+
+        # Update summaries of blinking rates.
+        p_on = rate_on / (rate_on + rate_off)
+        p_off = rate_off / (rate_on + rate_off)
+        Q_blink = get_Q_blink(rate_on=rate_on, rate_off=rate_off)
+        blink_distn = {False : p_off, True : p_on}
+
+        # Summarize some codon column histories.
+        blink_summary = BlinkSummary()
+        for i, codon_column in enumerate(selected_codon_columns):
+            pos = i + 1
+            benign_residues = pos_to_benign_residues.get(pos, set())
+            lethal_residues = pos_to_lethal_residues.get(pos, set())
+            process_alignment_column(
+                    blink_summary,
+                    args.k,
+                    genetic_code, primary_to_tol,
+                    T, root, edge_to_blen, edge_to_rate,
+                    name_to_leaf, human_leaf,
+                    Q_primary, Q_blink, Q_meta,
+                    primary_distn, blink_distn,
+                    names, codon_column,
+                    benign_residues, lethal_residues,
+                    )
+
+        # Estimate new blinking rates.
+        rate_on, rate_off =  get_blink_rate_mle(
+                blink_summary.xon_root_count,
+                blink_summary.off_root_count,
+                blink_summary.off_xon_count,
+                blink_summary.xon_off_count,
+                blink_summary.off_xon_dwell,
+                blink_summary.xon_off_dwell,
                 )
-        #print()
+        print('finished EM iteration', em_iteration)
 
 
 if __name__ == '__main__':
