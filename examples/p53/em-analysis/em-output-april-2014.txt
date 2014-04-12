@@ -1,0 +1,283 @@
+sampling histories using the following rates:
+rate on: 1.0
+rate off: 1.0
+finished EM iteration 1
+sampling histories using the following rates:
+rate on: 1.13843184331
+rate off: 0.904386115346
+finished EM iteration 2
+sampling histories using the following rates:
+rate on: 1.28700078029
+rate off: 0.833130043596
+finished EM iteration 3
+sampling histories using the following rates:
+rate on: 1.42278301973
+rate off: 0.767715050889
+finished EM iteration 4
+sampling histories using the following rates:
+rate on: 1.55590034374
+rate off: 0.716183173259
+finished EM iteration 5
+sampling histories using the following rates:
+rate on: 1.68577780792
+rate off: 0.67149827148
+finished EM iteration 6
+sampling histories using the following rates:
+rate on: 1.81448073714
+rate off: 0.631020475363
+finished EM iteration 7
+sampling histories using the following rates:
+rate on: 1.94398833573
+rate off: 0.59726452135
+finished EM iteration 8
+sampling histories using the following rates:
+rate on: 2.0713159741
+rate off: 0.569655120613
+finished EM iteration 9
+sampling histories using the following rates:
+rate on: 2.19598141955
+rate off: 0.546574721792
+finished EM iteration 10
+sampling histories using the following rates:
+rate on: 2.2915605399
+rate off: 0.522853934478
+finished EM iteration 11
+sampling histories using the following rates:
+rate on: 2.40399188402
+rate off: 0.506031441306
+finished EM iteration 12
+sampling histories using the following rates:
+rate on: 2.51520817114
+rate off: 0.489551284818
+finished EM iteration 13
+sampling histories using the following rates:
+rate on: 2.63125526456
+rate off: 0.471995091944
+finished EM iteration 14
+sampling histories using the following rates:
+rate on: 2.7324151021
+rate off: 0.454047243769
+finished EM iteration 15
+sampling histories using the following rates:
+rate on: 2.84184818113
+rate off: 0.436762844771
+finished EM iteration 16
+sampling histories using the following rates:
+rate on: 2.95316439522
+rate off: 0.423936971815
+finished EM iteration 17
+sampling histories using the following rates:
+rate on: 3.05456635602
+rate off: 0.411013464043
+finished EM iteration 18
+sampling histories using the following rates:
+rate on: 3.16224163211
+rate off: 0.399845615797
+finished EM iteration 19
+sampling histories using the following rates:
+rate on: 3.25377264643
+rate off: 0.388642002555
+finished EM iteration 20
+sampling histories using the following rates:
+rate on: 3.32115475757
+rate off: 0.377757536533
+finished EM iteration 21
+sampling histories using the following rates:
+rate on: 3.4282677429
+rate off: 0.368092131665
+finished EM iteration 22
+sampling histories using the following rates:
+rate on: 3.51970019657
+rate off: 0.361408251455
+finished EM iteration 23
+sampling histories using the following rates:
+rate on: 3.57709289812
+rate off: 0.352935823988
+finished EM iteration 24
+sampling histories using the following rates:
+rate on: 3.63722620514
+rate off: 0.349373687619
+finished EM iteration 25
+sampling histories using the following rates:
+rate on: 3.70716446371
+rate off: 0.339981387021
+finished EM iteration 26
+sampling histories using the following rates:
+rate on: 3.75321849895
+rate off: 0.335483850891
+finished EM iteration 27
+sampling histories using the following rates:
+rate on: 3.8145315428
+rate off: 0.32722565095
+finished EM iteration 28
+sampling histories using the following rates:
+rate on: 3.86732221152
+rate off: 0.320541391626
+finished EM iteration 29
+sampling histories using the following rates:
+rate on: 3.9090329487
+rate off: 0.314361127185
+finished EM iteration 30
+sampling histories using the following rates:
+rate on: 3.95391470442
+rate off: 0.311696626872
+finished EM iteration 31
+sampling histories using the following rates:
+rate on: 4.03131789306
+rate off: 0.307787488154
+finished EM iteration 32
+sampling histories using the following rates:
+rate on: 4.09893665215
+rate off: 0.30353219616
+finished EM iteration 33
+sampling histories using the following rates:
+rate on: 4.1443405591
+rate off: 0.302516605835
+finished EM iteration 34
+sampling histories using the following rates:
+rate on: 4.19729202496
+rate off: 0.300012989492
+finished EM iteration 35
+sampling histories using the following rates:
+rate on: 4.23272661602
+rate off: 0.295270947324
+finished EM iteration 36
+sampling histories using the following rates:
+rate on: 4.31231434132
+rate off: 0.293548912604
+finished EM iteration 37
+sampling histories using the following rates:
+rate on: 4.3828546237
+rate off: 0.288164061634
+finished EM iteration 38
+sampling histories using the following rates:
+rate on: 4.43321749134
+rate off: 0.285247518575
+finished EM iteration 39
+sampling histories using the following rates:
+rate on: 4.52242456274
+rate off: 0.283627035653
+finished EM iteration 40
+sampling histories using the following rates:
+rate on: 4.59830533553
+rate off: 0.277607248315
+finished EM iteration 41
+sampling histories using the following rates:
+rate on: 4.6386812121
+rate off: 0.27623185696
+finished EM iteration 42
+sampling histories using the following rates:
+rate on: 4.72734097919
+rate off: 0.274577522203
+finished EM iteration 43
+sampling histories using the following rates:
+rate on: 4.79624751728
+rate off: 0.274326650974
+finished EM iteration 44
+sampling histories using the following rates:
+rate on: 4.80644164338
+rate off: 0.269145797884
+finished EM iteration 45
+sampling histories using the following rates:
+rate on: 4.84304448714
+rate off: 0.26661252334
+finished EM iteration 46
+sampling histories using the following rates:
+rate on: 4.92786303361
+rate off: 0.266609560341
+finished EM iteration 47
+sampling histories using the following rates:
+rate on: 4.96417278203
+rate off: 0.265725946767
+finished EM iteration 48
+sampling histories using the following rates:
+rate on: 4.96656650885
+rate off: 0.263588340719
+finished EM iteration 49
+sampling histories using the following rates:
+rate on: 4.95989879807
+rate off: 0.258744869063
+finished EM iteration 50
+sampling histories using the following rates:
+rate on: 4.99520835019
+rate off: 0.257164688929
+finished EM iteration 51
+sampling histories using the following rates:
+rate on: 5.05582892553
+rate off: 0.257219907135
+finished EM iteration 52
+sampling histories using the following rates:
+rate on: 5.07515495001
+rate off: 0.253859259588
+finished EM iteration 53
+sampling histories using the following rates:
+rate on: 5.10064289711
+rate off: 0.252537727861
+finished EM iteration 54
+sampling histories using the following rates:
+rate on: 5.14277453112
+rate off: 0.249331302184
+finished EM iteration 55
+sampling histories using the following rates:
+rate on: 5.1607761688
+rate off: 0.246311979025
+finished EM iteration 56
+sampling histories using the following rates:
+rate on: 5.20370196947
+rate off: 0.244352395382
+finished EM iteration 57
+sampling histories using the following rates:
+rate on: 5.18120699325
+rate off: 0.242139344195
+finished EM iteration 58
+sampling histories using the following rates:
+rate on: 5.27243732197
+rate off: 0.241463540629
+finished EM iteration 59
+sampling histories using the following rates:
+rate on: 5.29561257732
+rate off: 0.239729700631
+finished EM iteration 60
+sampling histories using the following rates:
+rate on: 5.28820826935
+rate off: 0.239073323971
+finished EM iteration 61
+sampling histories using the following rates:
+rate on: 5.32277171666
+rate off: 0.240052129731
+finished EM iteration 62
+sampling histories using the following rates:
+rate on: 5.34818033222
+rate off: 0.240144643407
+finished EM iteration 63
+sampling histories using the following rates:
+rate on: 5.42951568128
+rate off: 0.240812720629
+finished EM iteration 64
+sampling histories using the following rates:
+rate on: 5.46001377927
+rate off: 0.239134501066
+finished EM iteration 65
+sampling histories using the following rates:
+rate on: 5.48408305998
+rate off: 0.238174101655
+finished EM iteration 66
+sampling histories using the following rates:
+rate on: 5.48298718017
+rate off: 0.23836497992
+finished EM iteration 67
+sampling histories using the following rates:
+rate on: 5.49207836221
+rate off: 0.236729543091
+finished EM iteration 68
+sampling histories using the following rates:
+rate on: 5.48005071788
+rate off: 0.23722001782
+finished EM iteration 69
+sampling histories using the following rates:
+rate on: 5.49233706731
+rate off: 0.235653249497
+finished EM iteration 70
+sampling histories using the following rates:
+rate on: 5.51511499067
+rate off: 0.235045538083
