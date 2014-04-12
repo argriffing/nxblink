@@ -41,6 +41,7 @@ import nxblink
 from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
+from nxblink.maxlikelihood import get_blink_rate_mle
 from nxblink.trajectory import Trajectory
 from nxblink.summary import (BlinkSummary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
@@ -283,6 +284,7 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     print('dwell off:', total_dwell_off / nsamples)
     print('dwell on :', total_dwell_on / nsamples)
+    print()
 
     # report infos per column
     print(
@@ -294,12 +296,16 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
             blink_summary.xon_off_dwell,
             blink_summary.nsamples,
             sep='\t')
-    print('ml rate on:',
-            (blink_summary.xon_root_count + blink_summary.off_xon_count) / (
-                blink_summary.off_xon_dwell))
-    print('ml rate off:',
-            (blink_summary.off_root_count + blink_summary.xon_off_count) / (
-                blink_summary.xon_off_dwell))
+    ml_rate_on, ml_rate_off =  get_blink_rate_mle(
+            blink_summary.xon_root_count,
+            blink_summary.off_root_count,
+            blink_summary.off_xon_count,
+            blink_summary.xon_off_count,
+            blink_summary.off_xon_dwell,
+            blink_summary.xon_off_dwell,
+            )
+    print('ml rate on:', ml_rate_on)
+    print('ml rate off:', ml_rate_off)
     print()
 
 

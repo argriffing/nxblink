@@ -24,6 +24,7 @@ import nxblink
 from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
+from nxblink.maxlikelihood import get_blink_rate_mle
 from nxblink.trajectory import Trajectory
 from nxblink.summary import (BlinkSummary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
@@ -251,12 +252,16 @@ def process_alignment_column(
             blink_summary.xon_off_dwell,
             blink_summary.nsamples,
             sep='\t')
-    print('ml rate on:',
-            (blink_summary.xon_root_count + blink_summary.off_xon_count) / (
-                blink_summary.off_xon_dwell))
-    print('ml rate off:',
-            (blink_summary.off_root_count + blink_summary.xon_off_count) / (
-                blink_summary.xon_off_dwell))
+    ml_rate_on, ml_rate_off =  get_blink_rate_mle(
+            blink_summary.xon_root_count,
+            blink_summary.off_root_count,
+            blink_summary.off_xon_count,
+            blink_summary.xon_off_count,
+            blink_summary.off_xon_dwell,
+            blink_summary.xon_off_dwell,
+            )
+    print('ml rate on:', ml_rate_on)
+    print('ml rate off:', ml_rate_off)
 
     """
     # report infos
@@ -346,18 +351,58 @@ def main(args):
     #RATE_ON = 1.0
     #RATE_OFF = 1.0
 
-    # For the first column of the p53 alignment,
-    # one step of EM for blink rates using sqrt nsamples 8:
-    #RATE_ON = 1.315
-    #RATE_OFF = 0.993
-
-    # Two iterations of EM.
-    #RATE_ON = 1.666
-    #RATE_OFF = 0.994
-
     # Restart using different blinking rates.
-    RATE_ON = 0.1
-    RATE_OFF = 0.2
+    # The following are all for the first p53 column with k=10 sqrt samples.
+    #RATE_ON = 0.1
+    #RATE_OFF = 0.2
+
+    # Second iteration of EM.
+    #RATE_ON = 0.36
+    #RATE_OFF = 0.15
+
+    # Another iteration of EM.
+    #RATE_ON = 0.56
+    #RATE_OFF = 0.12
+
+    # Another iteration of EM.
+    #RATE_ON = 0.74
+    #RATE_OFF = 0.10
+
+    # Another iteration of EM.
+    #RATE_ON = 0.90
+    #RATE_OFF = 0.09
+
+    # Another iteration of EM.
+    #RATE_ON = 1.00
+    #RATE_OFF = 0.08
+
+    # Another iteration of EM.
+    #RATE_ON = 1.10
+    #RATE_OFF = 0.07
+
+    # Another iteration of EM.
+    #RATE_ON = 1.26
+    #RATE_OFF = 0.06
+
+    # Another iteration of EM.
+    #RATE_ON = 1.38
+    #RATE_OFF = 0.06
+
+    # Another iteration of EM.
+    #RATE_ON = 1.45
+    #RATE_OFF = 0.06
+
+    # Another iteration of EM.
+    #RATE_ON = 1.611
+    #RATE_OFF = 0.057
+
+    # Another iteration of EM.
+    #RATE_ON = 1.613
+    #RATE_OFF = 0.053
+
+    # Another iteration of EM.
+    RATE_ON = 1.7
+    RATE_OFF = 0.05
 
     P_ON = RATE_ON / (RATE_ON + RATE_OFF)
     P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)

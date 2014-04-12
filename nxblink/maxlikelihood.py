@@ -96,6 +96,7 @@ def get_blink_rate_mle(
             xon_off_count,
             off_xon_dwell,
             xon_off_dwell,
+            low_rate=1e-4,
             ):
     def neg_ll(rates):
         rate_on, rate_off = rates
@@ -123,7 +124,9 @@ def get_blink_rate_mle(
                 )
         return -np.array([d_rate_on, d_rate_off])
     initial_rates = np.array([1.0, 1.0])
-    result = scipy.optimize.fmin_l_bfgs_b(neg_ll, initial_rates, fprime)
+    bounds = ((low_rate, None), (low_rate, None))
+    result = scipy.optimize.fmin_l_bfgs_b(
+            neg_ll, initial_rates, fprime, bounds=bounds)
     opt_rates, opt_neg_ll, info = result
     rate_on, rate_off = opt_rates
     return rate_on, rate_off
