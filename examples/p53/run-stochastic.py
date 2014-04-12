@@ -251,6 +251,12 @@ def process_alignment_column(
             blink_summary.xon_off_dwell,
             blink_summary.nsamples,
             sep='\t')
+    print('ml rate on:',
+            (blink_summary.xon_root_count + blink_summary.off_xon_count) / (
+                blink_summary.off_xon_dwell))
+    print('ml rate off:',
+            (blink_summary.off_root_count + blink_summary.xon_off_count) / (
+                blink_summary.xon_off_dwell))
 
     """
     # report infos
@@ -335,8 +341,24 @@ def main(args):
     # Specify the model.
     # Define the rate matrix for a single blinking trajectory,
     # and the prior blink state distribution.
-    RATE_ON = 1.0
-    RATE_OFF = 1.0
+
+    # Initial blink rate guess.
+    #RATE_ON = 1.0
+    #RATE_OFF = 1.0
+
+    # For the first column of the p53 alignment,
+    # one step of EM for blink rates using sqrt nsamples 8:
+    #RATE_ON = 1.315
+    #RATE_OFF = 0.993
+
+    # Two iterations of EM.
+    #RATE_ON = 1.666
+    #RATE_OFF = 0.994
+
+    # Restart using different blinking rates.
+    RATE_ON = 0.1
+    RATE_OFF = 0.2
+
     P_ON = RATE_ON / (RATE_ON + RATE_OFF)
     P_OFF = RATE_OFF / (RATE_ON + RATE_OFF)
     primary_to_tol = get_primary_to_tol()

@@ -294,6 +294,12 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
             blink_summary.xon_off_dwell,
             blink_summary.nsamples,
             sep='\t')
+    print('ml rate on:',
+            (blink_summary.xon_root_count + blink_summary.off_xon_count) / (
+                blink_summary.off_xon_dwell))
+    print('ml rate off:',
+            (blink_summary.off_root_count + blink_summary.xon_off_count) / (
+                blink_summary.xon_off_dwell))
     print()
 
 
