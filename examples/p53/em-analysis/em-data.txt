@@ -1,0 +1,1363 @@
+rate on: 1.0
+rate off: 1.0
+finished EM iteration 1
+sampling histories using the following rates:
+rate on: 1.13843184331
+rate off: 0.904386115346
+finished EM iteration 2
+sampling histories using the following rates:
+rate on: 1.28700078029
+rate off: 0.833130043596
+finished EM iteration 3
+sampling histories using the following rates:
+rate on: 1.42278301973
+rate off: 0.767715050889
+finished EM iteration 4
+sampling histories using the following rates:
+rate on: 1.55590034374
+rate off: 0.716183173259
+finished EM iteration 5
+sampling histories using the following rates:
+rate on: 1.68577780792
+rate off: 0.67149827148
+finished EM iteration 6
+sampling histories using the following rates:
+rate on: 1.81448073714
+rate off: 0.631020475363
+finished EM iteration 7
+sampling histories using the following rates:
+rate on: 1.94398833573
+rate off: 0.59726452135
+finished EM iteration 8
+sampling histories using the following rates:
+rate on: 2.0713159741
+rate off: 0.569655120613
+finished EM iteration 9
+sampling histories using the following rates:
+rate on: 2.19598141955
+rate off: 0.546574721792
+finished EM iteration 10
+sampling histories using the following rates:
+rate on: 2.2915605399
+rate off: 0.522853934478
+finished EM iteration 11
+sampling histories using the following rates:
+rate on: 2.40399188402
+rate off: 0.506031441306
+finished EM iteration 12
+sampling histories using the following rates:
+rate on: 2.51520817114
+rate off: 0.489551284818
+finished EM iteration 13
+sampling histories using the following rates:
+rate on: 2.63125526456
+rate off: 0.471995091944
+finished EM iteration 14
+sampling histories using the following rates:
+rate on: 2.7324151021
+rate off: 0.454047243769
+finished EM iteration 15
+sampling histories using the following rates:
+rate on: 2.84184818113
+rate off: 0.436762844771
+finished EM iteration 16
+sampling histories using the following rates:
+rate on: 2.95316439522
+rate off: 0.423936971815
+finished EM iteration 17
+sampling histories using the following rates:
+rate on: 3.05456635602
+rate off: 0.411013464043
+finished EM iteration 18
+sampling histories using the following rates:
+rate on: 3.16224163211
+rate off: 0.399845615797
+finished EM iteration 19
+sampling histories using the following rates:
+rate on: 3.25377264643
+rate off: 0.388642002555
+finished EM iteration 20
+sampling histories using the following rates:
+rate on: 3.32115475757
+rate off: 0.377757536533
+finished EM iteration 21
+sampling histories using the following rates:
+rate on: 3.4282677429
+rate off: 0.368092131665
+finished EM iteration 22
+sampling histories using the following rates:
+rate on: 3.51970019657
+rate off: 0.361408251455
+finished EM iteration 23
+sampling histories using the following rates:
+rate on: 3.57709289812
+rate off: 0.352935823988
+finished EM iteration 24
+sampling histories using the following rates:
+rate on: 3.63722620514
+rate off: 0.349373687619
+finished EM iteration 25
+sampling histories using the following rates:
+rate on: 3.70716446371
+rate off: 0.339981387021
+finished EM iteration 26
+sampling histories using the following rates:
+rate on: 3.75321849895
+rate off: 0.335483850891
+finished EM iteration 27
+sampling histories using the following rates:
+rate on: 3.8145315428
+rate off: 0.32722565095
+finished EM iteration 28
+sampling histories using the following rates:
+rate on: 3.86732221152
+rate off: 0.320541391626
+finished EM iteration 29
+sampling histories using the following rates:
+rate on: 3.9090329487
+rate off: 0.314361127185
+finished EM iteration 30
+sampling histories using the following rates:
+rate on: 3.95391470442
+rate off: 0.311696626872
+finished EM iteration 31
+sampling histories using the following rates:
+rate on: 4.03131789306
+rate off: 0.307787488154
+finished EM iteration 32
+sampling histories using the following rates:
+rate on: 4.09893665215
+rate off: 0.30353219616
+finished EM iteration 33
+sampling histories using the following rates:
+rate on: 4.1443405591
+rate off: 0.302516605835
+finished EM iteration 34
+sampling histories using the following rates:
+rate on: 4.19729202496
+rate off: 0.300012989492
+finished EM iteration 35
+sampling histories using the following rates:
+rate on: 4.23272661602
+rate off: 0.295270947324
+finished EM iteration 36
+sampling histories using the following rates:
+rate on: 4.31231434132
+rate off: 0.293548912604
+finished EM iteration 37
+sampling histories using the following rates:
+rate on: 4.3828546237
+rate off: 0.288164061634
+finished EM iteration 38
+sampling histories using the following rates:
+rate on: 4.43321749134
+rate off: 0.285247518575
+finished EM iteration 39
+sampling histories using the following rates:
+rate on: 4.52242456274
+rate off: 0.283627035653
+finished EM iteration 40
+sampling histories using the following rates:
+rate on: 4.59830533553
+rate off: 0.277607248315
+finished EM iteration 41
+sampling histories using the following rates:
+rate on: 4.6386812121
+rate off: 0.27623185696
+finished EM iteration 42
+sampling histories using the following rates:
+rate on: 4.72734097919
+rate off: 0.274577522203
+finished EM iteration 43
+sampling histories using the following rates:
+rate on: 4.79624751728
+rate off: 0.274326650974
+finished EM iteration 44
+sampling histories using the following rates:
+rate on: 4.80644164338
+rate off: 0.269145797884
+finished EM iteration 45
+sampling histories using the following rates:
+rate on: 4.84304448714
+rate off: 0.26661252334
+finished EM iteration 46
+finished EM iteration 46
+sampling histories using the following rates:
+rate on: 4.92786303361
+rate off: 0.266609560341
+finished EM iteration 47
+sampling histories using the following rates:
+rate on: 4.96417278203
+rate off: 0.265725946767
+finished EM iteration 48
+sampling histories using the following rates:
+rate on: 4.96656650885
+rate off: 0.263588340719
+finished EM iteration 49
+sampling histories using the following rates:
+rate on: 4.95989879807
+rate off: 0.258744869063
+finished EM iteration 50
+sampling histories using the following rates:
+rate on: 4.99520835019
+rate off: 0.257164688929
+finished EM iteration 51
+sampling histories using the following rates:
+rate on: 5.05582892553
+rate off: 0.257219907135
+finished EM iteration 52
+sampling histories using the following rates:
+rate on: 5.07515495001
+rate off: 0.253859259588
+finished EM iteration 53
+sampling histories using the following rates:
+rate on: 5.10064289711
+rate off: 0.252537727861
+finished EM iteration 54
+sampling histories using the following rates:
+rate on: 5.14277453112
+rate off: 0.249331302184
+finished EM iteration 55
+sampling histories using the following rates:
+rate on: 5.1607761688
+rate off: 0.246311979025
+finished EM iteration 56
+sampling histories using the following rates:
+rate on: 5.20370196947
+rate off: 0.244352395382
+finished EM iteration 57
+sampling histories using the following rates:
+rate on: 5.18120699325
+rate off: 0.242139344195
+finished EM iteration 58
+sampling histories using the following rates:
+rate on: 5.27243732197
+rate off: 0.241463540629
+finished EM iteration 59
+sampling histories using the following rates:
+rate on: 5.29561257732
+rate off: 0.239729700631
+finished EM iteration 60
+sampling histories using the following rates:
+rate on: 5.28820826935
+rate off: 0.239073323971
+finished EM iteration 61
+sampling histories using the following rates:
+rate on: 5.32277171666
+rate off: 0.240052129731
+finished EM iteration 62
+sampling histories using the following rates:
+rate on: 5.34818033222
+rate off: 0.240144643407
+finished EM iteration 63
+sampling histories using the following rates:
+rate on: 5.42951568128
+rate off: 0.240812720629
+finished EM iteration 64
+sampling histories using the following rates:
+rate on: 5.46001377927
+rate off: 0.239134501066
+finished EM iteration 65
+sampling histories using the following rates:
+rate on: 5.48408305998
+rate off: 0.238174101655
+finished EM iteration 66
+sampling histories using the following rates:
+rate on: 5.48298718017
+rate off: 0.23836497992
+finished EM iteration 67
+sampling histories using the following rates:
+rate on: 5.49207836221
+rate off: 0.236729543091
+finished EM iteration 68
+sampling histories using the following rates:
+rate on: 5.48005071788
+rate off: 0.23722001782
+finished EM iteration 69
+sampling histories using the following rates:
+rate on: 5.49233706731
+rate off: 0.235653249497
+finished EM iteration 70
+sampling histories using the following rates:
+rate on: 5.51511499067
+rate off: 0.235045538083
+finished EM iteration 71
+sampling histories using the following rates:
+rate on: 5.51888169375
+rate off: 0.234403494829
+finished EM iteration 72
+sampling histories using the following rates:
+rate on: 5.57127136492
+rate off: 0.233289439314
+finished EM iteration 73
+sampling histories using the following rates:
+rate on: 5.55825593729
+rate off: 0.23222222982
+finished EM iteration 74
+sampling histories using the following rates:
+rate on: 5.57350519889
+rate off: 0.232077688679
+finished EM iteration 75
+sampling histories using the following rates:
+rate on: 5.6221495192
+rate off: 0.232154666627
+finished EM iteration 76
+sampling histories using the following rates:
+rate on: 5.59163504929
+rate off: 0.232199047894
+finished EM iteration 77
+sampling histories using the following rates:
+rate on: 5.625478767
+rate off: 0.233635652958
+finished EM iteration 78
+sampling histories using the following rates:
+rate on: 5.59949097411
+rate off: 0.231751977745
+finished EM iteration 79
+sampling histories using the following rates:
+rate on: 5.61747893405
+rate off: 0.231134446367
+finished EM iteration 80
+sampling histories using the following rates:
+rate on: 5.57806793721
+rate off: 0.23140984597
+finished EM iteration 81
+sampling histories using the following rates:
+rate on: 5.64319313244
+rate off: 0.230828451038
+finished EM iteration 82
+sampling histories using the following rates:
+rate on: 5.72456196354
+rate off: 0.22864516134
+finished EM iteration 83
+sampling histories using the following rates:
+rate on: 5.70017384836
+rate off: 0.229287460793
+finished EM iteration 84
+sampling histories using the following rates:
+rate on: 5.68331703232
+rate off: 0.229127310771
+finished EM iteration 85
+sampling histories using the following rates:
+rate on: 5.66671265109
+rate off: 0.22809356162
+finished EM iteration 86
+sampling histories using the following rates:
+rate on: 5.71355612223
+rate off: 0.227478576582
+finished EM iteration 87
+sampling histories using the following rates:
+rate on: 5.7439059156
+rate off: 0.22611744837
+finished EM iteration 88
+sampling histories using the following rates:
+rate on: 5.72163193709
+rate off: 0.225267665824
+finished EM iteration 89
+sampling histories using the following rates:
+rate on: 5.71895908251
+rate off: 0.224027866219
+finished EM iteration 90
+sampling histories using the following rates:
+rate on: 5.72006693362
+rate off: 0.223385243325
+finished EM iteration 91
+sampling histories using the following rates:
+rate on: 5.62496959336
+rate off: 0.221719034799
+finished EM iteration 92
+sampling histories using the following rates:
+rate on: 5.63303624782
+rate off: 0.223466542959
+finished EM iteration 93
+sampling histories using the following rates:
+rate on: 5.71353760107
+rate off: 0.222196093972
+finished EM iteration 94
+sampling histories using the following rates:
+rate on: 5.75512568374
+rate off: 0.219773249238
+finished EM iteration 95
+sampling histories using the following rates:
+rate on: 5.78754217692
+rate off: 0.219284514546
+finished EM iteration 96
+sampling histories using the following rates:
+rate on: 5.82270103513
+rate off: 0.217984451278
+finished EM iteration 97
+sampling histories using the following rates:
+rate on: 5.83075937901
+rate off: 0.217428648319
+finished EM iteration 98
+sampling histories using the following rates:
+rate on: 5.84659279669
+rate off: 0.219029623823
+finished EM iteration 99
+sampling histories using the following rates:
+rate on: 5.89124199683
+rate off: 0.219224774652
+finished EM iteration 100
+sampling histories using the following rates:
+rate on: 5.87124727432
+rate off: 0.218458928353
+finished EM iteration 101
+sampling histories using the following rates:
+rate on: 5.9193002849
+rate off: 0.21956075606
+finished EM iteration 102
+sampling histories using the following rates:
+rate on: 5.93527273355
+rate off: 0.219694617006
+finished EM iteration 103
+sampling histories using the following rates:
+rate on: 5.9598742716
+rate off: 0.220910240444
+finished EM iteration 104
+sampling histories using the following rates:
+rate on: 6.0028355551
+rate off: 0.220009663432
+finished EM iteration 105
+sampling histories using the following rates:
+rate on: 6.06088739759
+rate off: 0.219976359184
+finished EM iteration 106
+sampling histories using the following rates:
+rate on: 6.13687284151
+rate off: 0.219165844189
+finished EM iteration 107
+sampling histories using the following rates:
+rate on: 6.103710475
+rate off: 0.21866849783
+finished EM iteration 108
+sampling histories using the following rates:
+rate on: 6.09798847571
+rate off: 0.218486539689
+finished EM iteration 109
+sampling histories using the following rates:
+rate on: 6.15521585123
+rate off: 0.218193874073
+finished EM iteration 110
+sampling histories using the following rates:
+rate on: 6.18829963175
+rate off: 0.221600857614
+finished EM iteration 111
+sampling histories using the following rates:
+rate on: 6.17508948856
+rate off: 0.22124688129
+finished EM iteration 112
+sampling histories using the following rates:
+rate on: 6.13456593711
+rate off: 0.22468545677
+finished EM iteration 113
+sampling histories using the following rates:
+rate on: 6.1247635294
+rate off: 0.22337903438
+finished EM iteration 114
+sampling histories using the following rates:
+rate on: 6.1169122745
+rate off: 0.221760024178
+finished EM iteration 115
+sampling histories using the following rates:
+rate on: 6.11306099277
+rate off: 0.223005152324
+finished EM iteration 116
+sampling histories using the following rates:
+rate on: 6.06438402404
+rate off: 0.22472891023
+finished EM iteration 117
+sampling histories using the following rates:
+rate on: 6.05524079532
+rate off: 0.224927581254
+finished EM iteration 118
+sampling histories using the following rates:
+rate on: 6.10426497595
+rate off: 0.223542244328
+finished EM iteration 119
+sampling histories using the following rates:
+rate on: 6.14606231899
+rate off: 0.224043260734
+finished EM iteration 120
+sampling histories using the following rates:
+rate on: 6.1799460238
+rate off: 0.225681911694
+finished EM iteration 121
+sampling histories using the following rates:
+rate on: 6.19920955906
+rate off: 0.222380444079
+finished EM iteration 122
+sampling histories using the following rates:
+rate on: 6.21227813436
+rate off: 0.221631250096
+finished EM iteration 123
+sampling histories using the following rates:
+rate on: 6.21564626234
+rate off: 0.223983489285
+finished EM iteration 124
+sampling histories using the following rates:
+rate on: 6.19547819155
+rate off: 0.225698237058
+finished EM iteration 125
+sampling histories using the following rates:
+rate on: 6.17572123761
+rate off: 0.221281405852
+finished EM iteration 126
+sampling histories using the following rates:
+rate on: 6.1969393305
+rate off: 0.218792129784
+finished EM iteration 127
+sampling histories using the following rates:
+rate on: 6.26590917194
+rate off: 0.220564859091          
+finished EM iteration 128
+sampling histories using the following rates:
+rate on: 6.27263825142
+rate off: 0.220966787388
+finished EM iteration 129
+sampling histories using the following rates:
+rate on: 6.31595793538
+rate off: 0.220475038898
+finished EM iteration 130
+sampling histories using the following rates:
+rate on: 6.3075888059
+rate off: 0.218967624741
+finished EM iteration 131
+sampling histories using the following rates:
+rate on: 6.2880759738
+rate off: 0.219458188213
+finished EM iteration 132
+sampling histories using the following rates:
+rate on: 6.29855432629
+rate off: 0.21798758131
+finished EM iteration 133
+sampling histories using the following rates:
+rate on: 6.30146016763
+rate off: 0.219202614324
+finished EM iteration 134
+sampling histories using the following rates:
+rate on: 6.31099754349
+rate off: 0.21936351237
+finished EM iteration 135
+sampling histories using the following rates:
+rate on: 6.3087754826
+rate off: 0.217545711241
+finished EM iteration 136
+sampling histories using the following rates:
+rate on: 6.28087498948
+rate off: 0.21798862933
+finished EM iteration 137
+sampling histories using the following rates:
+rate on: 6.32113813266
+rate off: 0.217929564171
+finished EM iteration 138
+sampling histories using the following rates:
+rate on: 6.26622654861
+rate off: 0.218720275511
+finished EM iteration 139
+sampling histories using the following rates:
+rate on: 6.23607118034
+rate off: 0.217713563627
+finished EM iteration 140
+sampling histories using the following rates:
+rate on: 6.25509318779
+rate off: 0.216962512244
+finished EM iteration 141
+sampling histories using the following rates:
+rate on: 6.29582732607
+rate off: 0.216671087282
+finished EM iteration 142
+sampling histories using the following rates:
+rate on: 6.28912347015
+rate off: 0.217470938439
+finished EM iteration 143
+sampling histories using the following rates:
+rate on: 6.28881266216
+rate off: 0.215260148741
+finished EM iteration 144
+sampling histories using the following rates:
+rate on: 6.3281714832
+rate off: 0.216375635013
+finished EM iteration 145
+sampling histories using the following rates:
+rate on: 6.31566811236
+rate off: 0.217040434084
+finished EM iteration 146
+sampling histories using the following rates:
+rate on: 6.36738390273
+rate off: 0.215834349079
+finished EM iteration 147
+sampling histories using the following rates:
+rate on: 6.37625414402
+rate off: 0.214720963476
+finished EM iteration 148
+sampling histories using the following rates:
+rate on: 6.34760770693
+rate off: 0.214616924061
+finished EM iteration 149
+sampling histories using the following rates:
+rate on: 6.32081184171
+rate off: 0.212970208571
+finished EM iteration 150
+sampling histories using the following rates:
+rate on: 6.29654771326
+rate off: 0.210552150877
+finished EM iteration 151
+sampling histories using the following rates:
+rate on: 6.32242701643
+rate off: 0.211855015741
+finished EM iteration 152
+sampling histories using the following rates:
+rate on: 6.39202001876
+rate off: 0.210649931837
+finished EM iteration 153
+sampling histories using the following rates:
+rate on: 6.33941854531
+rate off: 0.2107442122
+finished EM iteration 154
+sampling histories using the following rates:
+rate on: 6.33638477476
+rate off: 0.212398551002
+finished EM iteration 155
+sampling histories using the following rates:
+rate on: 6.35857101553
+rate off: 0.211168774183
+finished EM iteration 156
+sampling histories using the following rates:
+rate on: 6.37127806829
+rate off: 0.21114599482
+finished EM iteration 157
+sampling histories using the following rates:
+rate on: 6.39275989439
+rate off: 0.211034548406
+finished EM iteration 158
+sampling histories using the following rates:
+rate on: 6.39018081341
+rate off: 0.209193229936
+finished EM iteration 159
+sampling histories using the following rates:
+rate on: 6.36647630766
+rate off: 0.208384238621
+finished EM iteration 160
+sampling histories using the following rates:
+rate on: 6.37019941541
+rate off: 0.212234654194
+finished EM iteration 161
+sampling histories using the following rates:
+rate on: 6.33291796884
+rate off: 0.212594542108
+finished EM iteration 162
+sampling histories using the following rates:
+rate on: 6.39022602145
+rate off: 0.212278067731
+finished EM iteration 163
+sampling histories using the following rates:
+rate on: 6.41105191308
+rate off: 0.214200130579
+finished EM iteration 164
+sampling histories using the following rates:
+rate on: 6.42927053476
+rate off: 0.213921890589
+finished EM iteration 165
+sampling histories using the following rates:
+rate on: 6.46710319457
+rate off: 0.214896703391
+finished EM iteration 166
+sampling histories using the following rates:
+rate on: 6.54892382882
+rate off: 0.216800064405
+finished EM iteration 167
+sampling histories using the following rates:
+rate on: 6.52249091526
+rate off: 0.216002345888
+finished EM iteration 168
+sampling histories using the following rates:
+rate on: 6.48995479483
+rate off: 0.216102383464
+finished EM iteration 169
+sampling histories using the following rates:
+rate on: 6.53624258846
+rate off: 0.217178352482
+finished EM iteration 170
+sampling histories using the following rates:
+rate on: 6.54096459969
+rate off: 0.217472485395
+finished EM iteration 171
+sampling histories using the following rates:
+rate on: 6.47527232805
+rate off: 0.218079511356
+finished EM iteration 172
+sampling histories using the following rates:
+rate on: 6.47476924857
+rate off: 0.217356251928
+finished EM iteration 173
+sampling histories using the following rates:
+rate on: 6.45111966723
+rate off: 0.216684571318
+finished EM iteration 174
+sampling histories using the following rates:
+rate on: 6.46699499086
+rate off: 0.217272080331
+finished EM iteration 175
+sampling histories using the following rates:
+rate on: 6.45171755646
+rate off: 0.217070454708
+finished EM iteration 176
+sampling histories using the following rates:
+rate on: 6.49525240331
+rate off: 0.216619089223
+finished EM iteration 177
+sampling histories using the following rates:
+rate on: 6.4961114093
+rate off: 0.218155067569
+finished EM iteration 178
+sampling histories using the following rates:
+rate on: 6.40394513671
+rate off: 0.217410205017
+finished EM iteration 179
+sampling histories using the following rates:
+rate on: 6.42797691437
+rate off: 0.216355837681
+finished EM iteration 180
+sampling histories using the following rates:
+rate on: 6.41778875767
+rate off: 0.215661262814
+finished EM iteration 181
+sampling histories using the following rates:
+rate on: 6.42464639071
+rate off: 0.215324842754
+finished EM iteration 182
+sampling histories using the following rates:
+rate on: 6.47698966434
+rate off: 0.214840730473
+finished EM iteration 183
+sampling histories using the following rates:
+rate on: 6.43040885766
+rate off: 0.216434608742
+finished EM iteration 184
+sampling histories using the following rates:
+rate on: 6.37782807679
+rate off: 0.215601472181
+finished EM iteration 185
+sampling histories using the following rates:
+rate on: 6.43763833793
+rate off: 0.215724889515
+finished EM iteration 186
+sampling histories using the following rates:
+rate on: 6.44861967779
+rate off: 0.216639444041
+finished EM iteration 187
+sampling histories using the following rates:
+rate on: 6.43020571706
+rate off: 0.216463264611
+finished EM iteration 188
+sampling histories using the following rates:
+rate on: 6.55851951744
+rate off: 0.217213340845
+finished EM iteration 189
+sampling histories using the following rates:
+rate on: 6.56279016566
+rate off: 0.217986422006
+finished EM iteration 190
+sampling histories using the following rates:
+rate on: 6.59288501369
+rate off: 0.219157061579
+finished EM iteration 191
+sampling histories using the following rates:
+rate on: 6.60721235174
+rate off: 0.221369980693
+finished EM iteration 192
+sampling histories using the following rates:
+rate on: 6.57307964942
+rate off: 0.220876254835
+finished EM iteration 193
+sampling histories using the following rates:
+rate on: 6.5907034516
+rate off: 0.221558562697
+finished EM iteration 194
+sampling histories using the following rates:
+rate on: 6.6235915085
+rate off: 0.220777235853
+finished EM iteration 195
+sampling histories using the following rates:
+rate on: 6.5919438186
+rate off: 0.219726673671
+finished EM iteration 196
+sampling histories using the following rates:
+rate on: 6.59182216963
+rate off: 0.219349992981
+finished EM iteration 197
+sampling histories using the following rates:
+rate on: 6.62237325026
+rate off: 0.21972316827
+finished EM iteration 198
+sampling histories using the following rates:
+rate on: 6.66194170887
+rate off: 0.221393089371
+finished EM iteration 199
+sampling histories using the following rates:
+rate on: 6.67337171217
+rate off: 0.221752890856
+finished EM iteration 200
+sampling histories using the following rates:
+rate on: 6.66469121389
+rate off: 0.224308944294
+finished EM iteration 201
+sampling histories using the following rates:
+rate on: 6.61562432142
+rate off: 0.223816336316
+finished EM iteration 202
+sampling histories using the following rates:
+rate on: 6.61587603215
+rate off: 0.223248689498
+finished EM iteration 203
+sampling histories using the following rates:
+rate on: 6.61517865242
+rate off: 0.225376596649
+finished EM iteration 204
+sampling histories using the following rates:
+rate on: 6.6368183585
+rate off: 0.226395241783
+finished EM iteration 205
+sampling histories using the following rates:
+rate on: 6.66634878417
+rate off: 0.226349471274
+finished EM iteration 206
+sampling histories using the following rates:
+rate on: 6.70463431732
+rate off: 0.226272472654
+finished EM iteration 207
+sampling histories using the following rates:
+rate on: 6.69337884146
+rate off: 0.225025687759
+finished EM iteration 208
+sampling histories using the following rates:
+rate on: 6.71299862333
+rate off: 0.226046975829
+finished EM iteration 209
+sampling histories using the following rates:
+rate on: 6.68625204357
+rate off: 0.226887532427
+finished EM iteration 210
+sampling histories using the following rates:
+rate on: 6.6596034642
+rate off: 0.225609876389
+finished EM iteration 211
+sampling histories using the following rates:
+rate on: 6.68184279992
+rate off: 0.225603371456
+finished EM iteration 212
+sampling histories using the following rates:
+rate on: 6.69433663967
+rate off: 0.228224149034
+finished EM iteration 213
+sampling histories using the following rates:
+rate on: 6.73685121628
+rate off: 0.229765355427
+finished EM iteration 214
+sampling histories using the following rates:
+rate on: 6.77293376169
+rate off: 0.229565187933
+finished EM iteration 215
+sampling histories using the following rates:
+rate on: 6.74890954624
+rate off: 0.229099240474
+finished EM iteration 216
+sampling histories using the following rates:
+rate on: 6.74344662958
+rate off: 0.230597182598
+finished EM iteration 217
+sampling histories using the following rates:
+rate on: 6.71750600754
+rate off: 0.230673088739
+finished EM iteration 218
+sampling histories using the following rates:
+rate on: 6.71502431148
+rate off: 0.228865569725
+finished EM iteration 219
+sampling histories using the following rates:
+rate on: 6.72801966718
+rate off: 0.230817642587
+finished EM iteration 220
+sampling histories using the following rates:
+rate on: 6.73128427177
+rate off: 0.230869930986
+finished EM iteration 221
+sampling histories using the following rates:
+rate on: 6.73431631977
+rate off: 0.228898116176
+finished EM iteration 222
+sampling histories using the following rates:
+rate on: 6.73118292908
+rate off: 0.228027492814
+finished EM iteration 223
+sampling histories using the following rates:
+rate on: 6.78100007523
+rate off: 0.227862240895
+finished EM iteration 224
+sampling histories using the following rates:
+rate on: 6.75602889364
+rate off: 0.229703337728
+finished EM iteration 225
+sampling histories using the following rates:
+rate on: 6.74383038873
+rate off: 0.229948907442
+finished EM iteration 226
+sampling histories using the following rates:
+rate on: 6.66304570259
+rate off: 0.230276381069
+finished EM iteration 227
+sampling histories using the following rates:
+rate on: 6.69875166364
+rate off: 0.231317618899
+finished EM iteration 228
+sampling histories using the following rates:
+rate on: 6.6634244843
+rate off: 0.232391079945
+finished EM iteration 229
+sampling histories using the following rates:
+rate on: 6.70748637868
+rate off: 0.234411549605
+finished EM iteration 230
+sampling histories using the following rates:
+rate on: 6.73025725252
+rate off: 0.235391710018
+finished EM iteration 231
+sampling histories using the following rates:
+rate on: 6.71979580709
+rate off: 0.234344968806
+finished EM iteration 232
+sampling histories using the following rates:
+rate on: 6.76718559983
+rate off: 0.235661638798
+finished EM iteration 233
+sampling histories using the following rates:
+rate on: 6.82750211377
+rate off: 0.237833266935
+finished EM iteration 234
+sampling histories using the following rates:
+rate on: 6.88012833646
+rate off: 0.237133792636
+finished EM iteration 235
+sampling histories using the following rates:
+rate on: 6.86005224603
+rate off: 0.238077884727
+finished EM iteration 236
+sampling histories using the following rates:
+rate on: 6.85507441547
+rate off: 0.237702789747
+finished EM iteration 237
+sampling histories using the following rates:
+rate on: 6.90863831364
+rate off: 0.239576874
+finished EM iteration 238
+sampling histories using the following rates:
+rate on: 6.8901403066
+rate off: 0.240841165186
+finished EM iteration 239
+sampling histories using the following rates:
+rate on: 6.96955228321
+rate off: 0.241694223782
+finished EM iteration 240
+sampling histories using the following rates:
+rate on: 7.08235785312
+rate off: 0.242210935377
+finished EM iteration 241
+sampling histories using the following rates:
+rate on: 7.15232110613
+rate off: 0.243383334888
+finished EM iteration 242
+sampling histories using the following rates:
+rate on: 7.18086052581
+rate off: 0.242168773037
+finished EM iteration 243
+sampling histories using the following rates:
+rate on: 7.16890603866
+rate off: 0.242355794605
+finished EM iteration 244
+sampling histories using the following rates:
+rate on: 7.13908738663
+rate off: 0.241132995233
+finished EM iteration 245
+sampling histories using the following rates:
+rate on: 7.21460022493
+rate off: 0.239556327745
+finished EM iteration 246
+sampling histories using the following rates:
+rate on: 7.11486962097
+rate off: 0.240312046191
+finished EM iteration 247
+sampling histories using the following rates:
+rate on: 7.18256883903
+rate off: 0.240444482642
+finished EM iteration 248
+sampling histories using the following rates:
+rate on: 7.07114805648
+rate off: 0.24143584561
+finished EM iteration 249
+sampling histories using the following rates:
+rate on: 7.11107718569
+rate off: 0.242667038153
+finished EM iteration 250
+sampling histories using the following rates:
+rate on: 7.17865364507
+rate off: 0.239581907101
+finished EM iteration 251
+sampling histories using the following rates:
+rate on: 7.1652169988
+rate off: 0.237958120189
+finished EM iteration 252
+sampling histories using the following rates:
+rate on: 7.21872959549
+rate off: 0.237056279716
+finished EM iteration 253
+sampling histories using the following rates:
+rate on: 7.30911239086
+rate off: 0.235283516571
+finished EM iteration 254
+sampling histories using the following rates:
+rate on: 7.33155956434
+rate off: 0.237140481841
+finished EM iteration 255
+sampling histories using the following rates:
+rate on: 7.2968606163
+rate off: 0.236945152174
+finished EM iteration 256
+sampling histories using the following rates:
+rate on: 7.31720424485
+rate off: 0.236525427808
+finished EM iteration 257
+sampling histories using the following rates:
+rate on: 7.39861256638
+rate off: 0.23712850986
+finished EM iteration 258
+sampling histories using the following rates:
+rate on: 7.45342818828
+rate off: 0.238644720907
+finished EM iteration 259
+sampling histories using the following rates:
+rate on: 7.45864619085
+rate off: 0.236920676883
+finished EM iteration 260
+sampling histories using the following rates:
+rate on: 7.46454233346
+rate off: 0.239100462353
+finished EM iteration 261
+sampling histories using the following rates:
+rate on: 7.47495649208
+rate off: 0.238662180589
+finished EM iteration 262
+sampling histories using the following rates:
+rate on: 7.49627303784
+rate off: 0.239049710888
+finished EM iteration 263
+sampling histories using the following rates:
+rate on: 7.47337877496
+rate off: 0.238751451968
+finished EM iteration 264
+sampling histories using the following rates:
+rate on: 7.50301376569
+rate off: 0.237854217699
+finished EM iteration 265
+sampling histories using the following rates:
+rate on: 7.48150433801
+rate off: 0.237224213753
+finished EM iteration 266
+sampling histories using the following rates:
+rate on: 7.49449030188
+rate off: 0.237896029929
+finished EM iteration 267
+sampling histories using the following rates:
+rate on: 7.46970400715
+rate off: 0.238121567586
+finished EM iteration 268
+sampling histories using the following rates:
+rate on: 7.4949878635
+rate off: 0.238608404137
+finished EM iteration 269
+sampling histories using the following rates:
+rate on: 7.53539795663
+rate off: 0.237839123017
+finished EM iteration 270
+sampling histories using the following rates:
+rate on: 7.52550887324
+rate off: 0.238007743294
+finished EM iteration 271
+sampling histories using the following rates:
+rate on: 7.52345402175
+rate off: 0.240079598084
+finished EM iteration 272
+sampling histories using the following rates:
+rate on: 7.54663427534
+rate off: 0.242954738158
+finished EM iteration 273
+sampling histories using the following rates:
+rate on: 7.57003915845
+rate off: 0.243793155171
+finished EM iteration 274
+sampling histories using the following rates:
+rate on: 7.56981831676
+rate off: 0.241942688412
+finished EM iteration 275
+sampling histories using the following rates:
+rate on: 7.59185291128
+rate off: 0.241741662355
+finished EM iteration 276
+sampling histories using the following rates:
+rate on: 7.57381166422
+rate off: 0.24074076752
+finished EM iteration 277
+sampling histories using the following rates:
+rate on: 7.58406618118
+rate off: 0.240040156706
+finished EM iteration 278
+sampling histories using the following rates:
+rate on: 7.57351983388
+rate off: 0.238321226485
+finished EM iteration 279
+sampling histories using the following rates:
+rate on: 7.55434374092
+rate off: 0.236575327183
+finished EM iteration 280
+sampling histories using the following rates:
+rate on: 7.51400375962
+rate off: 0.238821726316
+finished EM iteration 281
+sampling histories using the following rates:
+rate on: 7.52708388516
+rate off: 0.240166847065
+finished EM iteration 282
+sampling histories using the following rates:
+rate on: 7.47257247066
+rate off: 0.238635372675
+finished EM iteration 283
+sampling histories using the following rates:
+rate on: 7.44732202702
+rate off: 0.239633717782
+finished EM iteration 284
+sampling histories using the following rates:
+rate on: 7.45775129956
+rate off: 0.23956943331
+finished EM iteration 285
+sampling histories using the following rates:
+rate on: 7.41451323021
+rate off: 0.24080327611
+finished EM iteration 286
+sampling histories using the following rates:
+rate on: 7.43859098094
+rate off: 0.24265065243
+finished EM iteration 287
+sampling histories using the following rates:
+rate on: 7.50858590438
+rate off: 0.242885994107
+finished EM iteration 288
+sampling histories using the following rates:
+rate on: 7.535440545
+rate off: 0.244610330934
+finished EM iteration 289
+sampling histories using the following rates:
+rate on: 7.55167649723
+rate off: 0.243280283865
+finished EM iteration 290
+sampling histories using the following rates:
+rate on: 7.57360235412
+rate off: 0.242285833064
+finished EM iteration 291
+sampling histories using the following rates:
+rate on: 7.5288573416
+rate off: 0.243325413483
+finished EM iteration 292
+sampling histories using the following rates:
+rate on: 7.54731433126
+rate off: 0.242024257253
+finished EM iteration 293
+sampling histories using the following rates:
+rate on: 7.48993176104
+rate off: 0.244484872292
+finished EM iteration 294
+sampling histories using the following rates:
+rate on: 7.46449433261
+rate off: 0.244012228675
+finished EM iteration 295
+sampling histories using the following rates:
+rate on: 7.41969463097
+rate off: 0.240936489154
+finished EM iteration 296
+sampling histories using the following rates:
+rate on: 7.48338477698
+rate off: 0.243189188392
+finished EM iteration 297
+sampling histories using the following rates:
+rate on: 7.51164704278
+rate off: 0.242258465309
+finished EM iteration 298
+sampling histories using the following rates:
+rate on: 7.49579207656
+rate off: 0.240276745703
+finished EM iteration 299
+sampling histories using the following rates:
+rate on: 7.54223021347
+rate off: 0.243271788323
+finished EM iteration 300
+sampling histories using the following rates:
+rate on: 7.57238181025
+rate off: 0.243447184339
+finished EM iteration 301
+sampling histories using the following rates:
+rate on: 7.5248324986
+rate off: 0.243782720083
+finished EM iteration 302
+sampling histories using the following rates:
+rate on: 7.59519571005
+rate off: 0.244683137501
+finished EM iteration 303
+sampling histories using the following rates:
+rate on: 7.59758951118
+rate off: 0.245532739893
+finished EM iteration 304
+sampling histories using the following rates:
+rate on: 7.64399158253
+rate off: 0.245929541076
+finished EM iteration 305
+sampling histories using the following rates:
+rate on: 7.6479467616
+rate off: 0.246867573365
+finished EM iteration 306
+sampling histories using the following rates:
+rate on: 7.66043748636
+rate off: 0.246939743737
+finished EM iteration 307
+sampling histories using the following rates:
+rate on: 7.66218307586
+rate off: 0.247643796732
+finished EM iteration 308
+sampling histories using the following rates:
+rate on: 7.66948966372
+rate off: 0.249029079126
+finished EM iteration 309
+sampling histories using the following rates:
+rate on: 7.63870369722
+rate off: 0.24901408573
+finished EM iteration 310
+sampling histories using the following rates:
+rate on: 7.57510369492
+rate off: 0.247675775028
+finished EM iteration 311
+sampling histories using the following rates:
+rate on: 7.58467738674
+rate off: 0.246835957512
+finished EM iteration 312
+sampling histories using the following rates:
+rate on: 7.57033081192
+rate off: 0.2451267047
+finished EM iteration 313
+sampling histories using the following rates:
+rate on: 7.58995728205
+rate off: 0.243806399747
+finished EM iteration 314
+sampling histories using the following rates:
+rate on: 7.56354525335
+rate off: 0.242201228637
+finished EM iteration 315
+sampling histories using the following rates:
+rate on: 7.59549245709
+rate off: 0.241279569918
+finished EM iteration 316
+sampling histories using the following rates:
+rate on: 7.60657714786
+rate off: 0.242180130623
+finished EM iteration 317
+sampling histories using the following rates:
+rate on: 7.57440766117
+rate off: 0.244732338856
+finished EM iteration 318
+sampling histories using the following rates:
+rate on: 7.5411822375
+rate off: 0.243389863502
+finished EM iteration 319
+sampling histories using the following rates:
+rate on: 7.51196060591
+rate off: 0.245877155643
+finished EM iteration 320
+sampling histories using the following rates:
+rate on: 7.50102312662
+rate off: 0.247233328837
+finished EM iteration 321
+sampling histories using the following rates:
+rate on: 7.5535558842
+rate off: 0.244794602099
+finished EM iteration 322
+sampling histories using the following rates:
+rate on: 7.52939881995
+rate off: 0.246613125864
+finished EM iteration 323
+sampling histories using the following rates:
+rate on: 7.50972138086
+rate off: 0.246261433262
+finished EM iteration 324
+sampling histories using the following rates:
+rate on: 7.44269132776
+rate off: 0.246164552329
+finished EM iteration 325
+sampling histories using the following rates:
+rate on: 7.5157913283
+rate off: 0.247140407673
+finished EM iteration 326
+sampling histories using the following rates:
+rate on: 7.53287473511
+rate off: 0.24516129901
+finished EM iteration 327
+sampling histories using the following rates:
+rate on: 7.54990491534
+rate off: 0.245492371137
+finished EM iteration 328
+sampling histories using the following rates:
+rate on: 7.48583198268
+rate off: 0.245674152454
+finished EM iteration 329
+sampling histories using the following rates:
+rate on: 7.56454763081
+rate off: 0.245475087882
+finished EM iteration 330
+sampling histories using the following rates:
+rate on: 7.54885245525
+rate off: 0.245884522539
+finished EM iteration 331
+sampling histories using the following rates:
+rate on: 7.54476942523
+rate off: 0.246297227802
+finished EM iteration 332
+sampling histories using the following rates:
+rate on: 7.60016540805
+rate off: 0.24488172046
+finished EM iteration 333
+sampling histories using the following rates:
+rate on: 7.59981212961
+rate off: 0.244851308465
+finished EM iteration 334
+sampling histories using the following rates:
+rate on: 7.59592887808
+rate off: 0.24808645881
+finished EM iteration 335
+sampling histories using the following rates:
+rate on: 7.5771366126
+rate off: 0.247867964791
+finished EM iteration 336
+sampling histories using the following rates:
+rate on: 7.59549966266
+rate off: 0.247903129795
+finished EM iteration 337
+sampling histories using the following rates:
+rate on: 7.59063038323
+rate off: 0.245846814861
+finished EM iteration 338
+sampling histories using the following rates:
+rate on: 7.55203939366
+rate off: 0.247679118742
+finished EM iteration 339
+sampling histories using the following rates:
+rate on: 7.62324097486
+rate off: 0.246415161309
+finished EM iteration 340
+sampling histories using the following rates:
+rate on: 7.57894241843
+rate off: 0.248664678204

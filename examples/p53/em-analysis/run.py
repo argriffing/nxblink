@@ -5,7 +5,7 @@ def main():
     # read rates on and off from a hardcoded file name
     rates_on = []
     rates_off = []
-    with open('em-output-april-2014.txt') as fin:
+    with open('em-data.txt') as fin:
         for line in fin:
             if line.startswith('rate on'):
                 rates_on.append(float(line.split()[-1]))
