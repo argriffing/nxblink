@@ -46,7 +46,8 @@ from nxblink.trajectory import Trajectory
 from nxblink.summary import (BlinkSummary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
-        blinking_model_rao_teh, update_track_data_for_zero_blen)
+        init_tracks, gen_samples,
+        update_track_data_for_zero_blen)
 
 import nxmodel
 import nxmodelb
@@ -154,6 +155,10 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     tracks = [primary_track] + tolerance_tracks
     update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks)
 
+    # Initialize the tracks.
+    init_tracks(T, root, node_to_tm, edge_to_rate,
+            Q_primary, primary_track, tolerance_tracks, interaction_map)
+
     # Initialize the log likelihood contribution
     # of the initial state at the root.
     ell_init_contrib = 0
@@ -178,10 +183,9 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     total_dwell_off = 0
     total_dwell_on = 0
     blink_summary = BlinkSummary()
-    for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
+    for i, (pri_track, tol_tracks) in enumerate(gen_samples(
             T, root, node_to_tm, edge_to_rate,
-            Q_primary, Q_blink, Q_meta,
-            primary_track, tolerance_tracks, interaction_map)):
+            Q_meta, primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
         if nsampled <= burnin:
             continue

@@ -30,7 +30,8 @@ from nxblink.trajectory import Trajectory
 from nxblink.summary import (BlinkSummary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
-        blinking_model_rao_teh, update_track_data_for_zero_blen)
+        init_tracks, gen_samples,
+        update_track_data_for_zero_blen)
 
 from nxmodel import (
         get_Q_primary_and_distn, get_primary_to_tol, get_tree_info)
@@ -149,15 +150,18 @@ def process_alignment_column(
     tracks = [primary_track] + tolerance_tracks
     update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks)
 
+    # Initialize the track trajectories.
+    init_tracks(T, root, node_to_tm, edge_to_rate,
+            Q_primary, primary_track, tolerance_tracks, interaction_map)
+
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
     nsamples = nsamples_sqrt * nsamples_sqrt
     burnin = nsamples_sqrt
     ncounted = 0
-    for i, (pri_track, tol_tracks) in enumerate(blinking_model_rao_teh(
+    for i, (pri_track, tol_tracks) in enumerate(gen_samples(
             T, root, node_to_tm, edge_to_rate,
-            Q_primary, Q_blink, Q_meta,
-            primary_track, tolerance_tracks, interaction_map)):
+            Q_meta, primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
         #if nsampled % nsamples_sqrt == 0:
             #print('iteration', nsampled)
@@ -241,8 +245,8 @@ def main(args):
     Q_meta = get_Q_meta(Q_primary, primary_to_tol)
 
     # Initialize the blinking rates.
-    rate_on = 1.0
-    rate_off = 1.0
+    rate_on = 2.0
+    rate_off = 0.5
 
     # Outer EM loop.
     for em_iteration in itertools.count(1):

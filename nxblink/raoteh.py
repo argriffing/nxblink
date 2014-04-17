@@ -353,34 +353,11 @@ def sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
             fg_track, node_to_data_lmap)
 
 
-def blinking_model_rao_teh(
-        T, root, node_to_tm, edge_to_rate,
-        Q_primary, Q_blink, Q_meta,
-        primary_track, tolerance_tracks, interaction_map):
+# was part of blinking_model_rao_teh
+def init_tracks(T, root, node_to_tm, edge_to_rate,
+        Q_primary, primary_track, tolerance_tracks, interaction_map):
     """
-
-    Parameters
-    ----------
-    T : x
-        x
-    root : x
-        x
-    node_to_tm : x
-        x
-    edge_to_rate : x
-        x
-    Q_primary : x
-        x
-    Q_blink : x
-        x
-    Q_meta : x
-        x
-    primary_track : hashable
-        label of the primary track
-    tolerance_tracks : collection of hashables
-        labels of tolerance tracks
-    interaction_map : dict
-        x
+    Initialize all tracks.
 
     """
     # Initialize blink history and events.
@@ -394,24 +371,40 @@ def blinking_model_rao_teh(
     ev_to_P_nx = init_incomplete_primary_events(T, node_to_tm, edge_to_rate,
             primary_track, diameter)
 
-    # print stuff for debugging...
-    """
-    tracks = [primary_track] + tolerance_tracks
-    for track in tracks:
-        for edge in T.edges():
-            va, vb = edge
-            print(track.name, va, vb, track.events[edge])
-    """
-
-    #
     # Sample the state of the primary track.
     sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
             primary_track, tolerance_tracks, interaction_map['PRIMARY'])
-    #
+
     # Remove self-transition events from the primary track.
     primary_track.remove_self_transitions()
 
-    # Outer loop of the Rao-Teh-Gibbs sampler.
+
+# was part of blinking_model_rao_teh
+def gen_samples(T, root, node_to_tm, edge_to_rate,
+        Q_meta, primary_track, tolerance_tracks, interaction_map):
+    """
+    Tracks are assumed to have been initialized.
+
+    Parameters
+    ----------
+    T : x
+        x
+    root : x
+        x
+    node_to_tm : x
+        x
+    edge_to_rate : x
+        x
+    Q_meta : x
+        x
+    primary_track : hashable
+        label of the primary track
+    tolerance_tracks : collection of hashables
+        labels of tolerance tracks
+    interaction_map : dict
+        x
+
+    """
     while True:
 
         # add poisson events to the primary track
@@ -453,22 +446,6 @@ def blinking_model_rao_teh(
                     track, [primary_track], interaction_map[name], Q_meta)
             # remove self transitions for this blink track
             track.remove_self_transitions()
-
-        """
-        # Summarize the sample.
-        expected_on = 0
-        expected_off = 0
-        for track in tolerance_tracks:
-            for edge in T.edges():
-                for ev in track.events[edge]:
-                    transition = (ev.sa, ev.sb)
-                    if transition == (False, True):
-                        expected_on += 1
-                    elif transition == (True, False):
-                        expected_off += 1
-
-        yield expected_on, expected_off
-        """
 
         # Yield the track states.
         yield primary_track, tolerance_tracks
