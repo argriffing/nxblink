@@ -255,6 +255,7 @@ def main(args):
         print('sampling histories using the following rates:')
         print('rate on:', rate_on)
         print('rate off:', rate_off)
+        sys.stdout.flush()
 
         # Update summaries of blinking rates.
         p_on = rate_on / (rate_on + rate_off)
@@ -289,7 +290,14 @@ def main(args):
                 blink_summary.off_xon_dwell,
                 blink_summary.xon_off_dwell,
                 )
+        print('xon_root_count:', blink_summary.xon_root_count)
+        print('off_root_count:', blink_summary.off_root_count)
+        print('off_xon_count:', blink_summary.off_xon_count)
+        print('xon_off_count:', blink_summary.xon_off_count)
+        print('off_xon_dwell:', blink_summary.off_xon_dwell)
+        print('xon_off_dwell:', blink_summary.xon_off_dwell)
         print('finished EM iteration', em_iteration)
+        sys.stdout.flush()
 
 
 if __name__ == '__main__':
