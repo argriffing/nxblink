@@ -51,7 +51,7 @@ def _poisson_helper(track, rate, tma, tmb):
 
 
 def _sample_poisson_events(edge, edge_rate, node_to_tm,
-        bg_tracks, fg_track, bg_to_fg_fset):
+        bg_tracks, fg_track, bg_to_fg_fset, use_local_rates=True):
     """
     A helper function for a resampling step.
     
@@ -75,24 +75,33 @@ def _sample_poisson_events(edge, edge_rate, node_to_tm,
             fsets.append(bg_to_fg_fset[bg_track.name][bg_state])
         fg_allowed = set.intersection(*fsets)
 
-        # Get the local transition rate matrix determined by background.
-        # This uses the edge-specific rate scaling factor.
-        Q_local = nx.DiGraph()
-        for s in fg_track.Q_nx:
-            Q_local.add_node(s)
-        for sa, sb in fg_track.Q_nx.edges():
-            if sb in fg_allowed:
-                rate = edge_rate * fg_track.Q_nx[sa][sb]['weight']
-                Q_local.add_edge(sa, sb, weight=rate)
+        if use_local_rates:
 
-        # Compute the total local rates.
-        local_rates = get_total_rates(Q_local)
-        local_omega = get_omega(local_rates, 2)
+            # Get the local transition rate matrix determined by background.
+            # This uses the edge-specific rate scaling factor.
+            Q_local = nx.DiGraph()
+            for s in fg_track.Q_nx:
+                Q_local.add_node(s)
+            for sa, sb in fg_track.Q_nx.edges():
+                if sb in fg_allowed:
+                    rate = edge_rate * fg_track.Q_nx[sa][sb]['weight']
+                    Q_local.add_edge(sa, sb, weight=rate)
 
-        # Define a locally uniformized transition probability matrix.
-        # This transition matrix will be used for all foreground poisson events
-        # and all foreground transition events within the current context.
-        P_local = get_uniformized_P_nx(Q_local, local_rates, local_omega)
+            # Compute the total local rates.
+            local_rates = get_total_rates(Q_local)
+            local_omega = get_omega(local_rates, 2)
+
+            # Define a locally uniformized transition probability matrix.
+            # This transition matrix will be used for all foreground
+            # poisson events and all foreground transition events
+            # within the current context.
+            P_local = get_uniformized_P_nx(Q_local, local_rates, local_omega)
+
+        else:
+
+            global_rates = fg_track.total_rates
+            global_omega = fg_track.omega
+            P_local = fg_track.P_nx
 
         # Iterate over foreground segments within the background segment.
         # Add poisson events.
@@ -107,13 +116,23 @@ def _sample_poisson_events(edge, edge_rate, node_to_tm,
                 fg_state = eva.sb
                 ev_to_P_nx[eva] = P_local
 
-            # Compute the poisson rate for this foreground state segment
-            # using the local uniformization rate that depends on the
-            # background context.
-            if fg_state in local_rates:
-                poisson_rate = local_omega - local_rates[fg_state]
-            else:
+            if use_local_rates:
+
+                # Compute the poisson rate for this foreground state segment
+                # using the local uniformization rate that depends on the
+                # background context.
                 poisson_rate = local_omega
+                if fg_state in local_rates:
+                    poisson_rate -= local_rates[fg_state]
+
+            else:
+
+                poisson_rate = global_omega
+                if fg_state in global_rates:
+                    poisson_rate -= global_rates[fg_state]
+
+                poisson_rate *= edge_rate
+
 
             # Sample some poisson events on the segment.
             # Map the events to the local transition matrix.
@@ -170,7 +189,8 @@ def sample_primary_poisson_events(edge, edge_rate, node_to_tm,
     bg_tracks = blink_tracks
     bg_to_fg_fset = blink_to_primary_fset
     return _sample_poisson_events(edge, edge_rate, node_to_tm,
-            bg_tracks, fg_track, bg_to_fg_fset)
+            bg_tracks, fg_track, bg_to_fg_fset,
+            use_local_rates=True)
 
 
 def sample_blink_poisson_events(edge, edge_rate, node_to_tm,
@@ -196,4 +216,5 @@ def sample_blink_poisson_events(edge, edge_rate, node_to_tm,
     fg_track = foreground_blink_track
     bg_tracks = [primary_track]
     return _sample_poisson_events(edge, edge_rate, node_to_tm,
-            bg_tracks, fg_track, bg_to_fg_fset)
+            bg_tracks, fg_track, bg_to_fg_fset,
+            use_local_rates=True)

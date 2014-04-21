@@ -167,7 +167,8 @@ def sample_blink_transitions(T, root, node_to_tm, edge_to_rate,
     # Get the partition of the tree into chunks.
     info = get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
             primary_to_tol, Q_meta,
-            fg_track, primary_track)
+            fg_track, primary_track,
+            use_bg_penalty=True)
     chunk_tree, chunk_root, chunks, chunk_edge_to_event = info
 
     # Resample the foreground track history

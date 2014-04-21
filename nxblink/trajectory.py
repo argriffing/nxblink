@@ -48,23 +48,20 @@ class Trajectory(object):
         self.events = events
         self.prior_root_distn = prior_root_distn
         self.Q_nx = Q_nx
-        #self.uniformization_factor = uniformization_factor
+        self.uniformization_factor = uniformization_factor
 
         # Precompute the total rates out of each state.
-        #self.total_rates = get_total_rates(self.Q_nx)
+        self.total_rates = get_total_rates(self.Q_nx)
 
         # Precompute the uniformization rate.
-        #self.omega = get_omega(self.total_rates, self.uniformization_factor)
+        self.omega = get_omega(self.total_rates, self.uniformization_factor)
 
         # Precompute the uniformized transition matrix.
-        #self.P_nx = get_uniformized_P_nx(
-                #self.Q_nx, self.total_rates, self.omega)
+        self.P_nx = get_uniformized_P_nx(
+                self.Q_nx, self.total_rates, self.omega)
 
         # Precompute the identity transition matrix.
         self.P_nx_identity = get_identity_P_nx(set(Q_nx))
-
-        # Precompute poisson rates for Rao-Teh sampling.
-        #self.poisson_rates = get_poisson_rates(self.total_rates, self.omega)
 
     def remove_self_transitions(self):
         edges = set(self.events)
