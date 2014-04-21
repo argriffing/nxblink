@@ -12,12 +12,13 @@ import networkx as nx
 import nxmctree
 from nxmctree.sampling import sample_history
 
-from .util import (
-        set_or_confirm_history_state, get_total_rates, get_omega,
+from .util import (set_or_confirm_history_state, get_total_rates, get_omega,
         get_uniformized_P_nx)
 from .graphutil import get_edge_tree, partition_nodes
 from .navigation import MetaNode, gen_meta_segments
 from .trajectory import Event
+from .chunking import (get_primary_chunk_tree, get_blinking_chunk_tree,
+        resample_using_chunk_tree)
 from .poisson import sample_primary_poisson_events, sample_blink_poisson_events
 
 
@@ -177,6 +178,7 @@ def get_node_to_meta(T, root, node_to_tm, fg_track):
     return node_to_meta
 
 
+#TODO obsolete now that we are using chunk nodes
 def resample_using_meta_node_tree(root, meta_node_tree, mroot,
         fg_track, node_to_data_lmap):
     """
@@ -215,7 +217,8 @@ def resample_using_meta_node_tree(root, meta_node_tree, mroot,
             mb.set_sa(state)
 
 
-def sample_blink_transitions(T, root, node_to_tm, edge_to_rate, ev_to_P_nx,
+# TODO this old version uses meta trees instead of chunk trees
+def old_sample_blink_transitions(T, root, node_to_tm, edge_to_rate, ev_to_P_nx,
         fg_track, bg_tracks, bg_to_fg_fset, Q_meta):
     """
     Sample the history (nodes to states) and the events (edge to event list).
@@ -291,7 +294,9 @@ def sample_blink_transitions(T, root, node_to_tm, edge_to_rate, ev_to_P_nx,
             fg_track, node_to_data_lmap)
 
 
-def sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
+
+# TODO this old version uses meta trees instead of chunk trees
+def old_sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
         fg_track, bg_tracks, bg_to_fg_fset):
     """
     Sample the history (nodes to states) and the events (edge to event list).
@@ -353,11 +358,52 @@ def sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
             fg_track, node_to_data_lmap)
 
 
+def sample_blink_transitions(T, root, node_to_tm, edge_to_rate,
+        primary_to_tol, Q_meta, ev_to_P_nx,
+        fg_track, primary_track):
+    """
+    Sample the history (nodes to states) and the events (edge to event list).
+
+    """
+    # Get the partition of the tree into chunks.
+    info = get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
+            primary_to_tol, Q_meta,
+            fg_track, primary_track)
+    chunk_tree, chunk_root, chunks, chunk_edge_to_event = info
+
+    # Resample the foreground track history
+    # and the foreground event transitions using the chunk tree.
+    resample_using_chunk_tree(fg_track, ev_to_P_nx,
+            chunk_tree, chunk_root, chunks, chunk_edge_to_event)
+
+
+def sample_primary_transitions(T, root, node_to_tm, edge_to_rate,
+        primary_to_tol, ev_to_P_nx,
+        fg_track, bg_tracks):
+    """
+    Sample the history (nodes to states) and the events (edge to event list).
+
+    This function depends on a foreground track
+    and a collection of contextual background tracks.
+
+    """
+    # Get the partition of the tree into chunks.
+    info = get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
+            primary_to_tol,
+            fg_track, bg_tracks)
+    chunk_tree, chunk_root, chunks, chunk_edge_to_event = info
+
+    # Resample the foreground track history
+    # and the foreground event transitions using the chunk tree.
+    resample_using_chunk_tree(fg_track, ev_to_P_nx,
+            chunk_tree, chunk_root, chunks, chunk_edge_to_event)
+
+
 # was part of blinking_model_rao_teh
 def init_tracks(T, root, node_to_tm, edge_to_rate,
         Q_primary, primary_track, tolerance_tracks, interaction_map):
     """
-    Initialize all tracks.
+    Initialize trajectories of all tracks.
 
     """
     # Initialize blink history and events.
@@ -372,8 +418,9 @@ def init_tracks(T, root, node_to_tm, edge_to_rate,
             primary_track, diameter)
 
     # Sample the state of the primary track.
-    sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
-            primary_track, tolerance_tracks, interaction_map['PRIMARY'])
+    sample_primary_transitions(T, root, node_to_tm, edge_to_rate,
+            primary_to_tol, ev_to_P_nx,
+            primary_track, tolerance_tracks)
 
     # Remove self-transition events from the primary track.
     primary_track.remove_self_transitions()
@@ -381,7 +428,8 @@ def init_tracks(T, root, node_to_tm, edge_to_rate,
 
 # was part of blinking_model_rao_teh
 def gen_samples(T, root, node_to_tm, edge_to_rate,
-        Q_meta, primary_track, tolerance_tracks, interaction_map):
+        primary_to_tol, Q_meta,
+        primary_track, tolerance_tracks, interaction_map):
     """
     Tracks are assumed to have been initialized.
 
@@ -395,13 +443,15 @@ def gen_samples(T, root, node_to_tm, edge_to_rate,
         x
     edge_to_rate : x
         x
+    primary_to_tol : x
+        x
     Q_meta : x
         x
     primary_track : hashable
         label of the primary track
     tolerance_tracks : collection of hashables
         labels of tolerance tracks
-    interaction_map : dict
+    interaction_map : x
         x
 
     """
@@ -420,8 +470,9 @@ def gen_samples(T, root, node_to_tm, edge_to_rate,
         # clear state labels for the primary track
         primary_track.clear_state_labels()
         # sample state transitions for the primary track
-        sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
-                primary_track, tolerance_tracks, interaction_map['PRIMARY'])
+        sample_primary_transitions(T, root, node_to_tm, edge_to_rate,
+                primary_to_tol, ev_to_P_nx,
+                primary_track, tolerance_tracks)
         # remove self transitions for the primary track
         primary_track.remove_self_transitions()
 
@@ -440,10 +491,9 @@ def gen_samples(T, root, node_to_tm, edge_to_rate,
             # clear state labels for this blink track
             track.clear_state_labels()
             # sample state transitions for this blink track
-            sample_blink_transitions(
-                    T, root, node_to_tm,
-                    edge_to_rate, ev_to_P_nx,
-                    track, [primary_track], interaction_map[name], Q_meta)
+            sample_blink_transitions(T, root, node_to_tm, edge_to_rate,
+                    primary_to_tol, Q_meta, ev_to_P_nx,
+                    track, primary_track)
             # remove self transitions for this blink track
             track.remove_self_transitions()
 

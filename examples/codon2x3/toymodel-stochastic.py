@@ -185,7 +185,8 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     blink_summary = BlinkSummary()
     for i, (pri_track, tol_tracks) in enumerate(gen_samples(
             T, root, node_to_tm, edge_to_rate,
-            Q_meta, primary_track, tolerance_tracks, interaction_map)):
+            primary_to_tol, Q_meta,
+            primary_track, tolerance_tracks, interaction_map)):
         nsampled = i+1
         if nsampled <= burnin:
             continue

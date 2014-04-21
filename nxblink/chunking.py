@@ -19,6 +19,9 @@ in a more object oriented style.
 """
 from __future__ import division, print_function, absolute_import
 
+import nxmctree
+from nxmctree.sampling import sample_history
+
 
 class Chunk(object):
     def __init__(self, idx, all_fg_states):
@@ -208,7 +211,6 @@ def _primary_edge(
 
 def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
         primary_to_tol,
-        all_primary_states,
         fg_track, tolerance_tracks,
         ):
     """
@@ -216,7 +218,7 @@ def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
 
     """
     # All foreground states.
-    all_fg_states = all_primary_states
+    all_fg_states = set(primary_to_tol)
 
     # Construct the root of the chunk tree, and add it to the list.
     chunks = []
@@ -248,4 +250,37 @@ def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
     # Return the chunk tree, its root, the list of chunk nodes,
     # and the map from chunk tree edges to foreground events.
     return chunk_tree, chunk_root, chunks, chunk_edge_to_event
+
+
+def resample_using_chunk_tree(
+        fg_track, ev_to_P_nx,
+        chunk_tree, chunk_root, chunks, chunk_edge_to_event,
+        ):
+    """
+    Construct the per-node information, then sample the foreground states,
+    then map the foreground states per chunk back onto the foreground states
+    at structural nodes and at transition events.
+
+    """
+    edge_to_P = dict(
+            (edge, ev_to_P_nx[ev]) for edge, ev in chunk_edge_to_event.items())
+    node_to_data_lmap = dict()
+    for chunk in chunks:
+        allowed = chunk.data_allowed_states & chunk.bg_allowed_states
+        d = {}
+        for state, likelihood in chunk.state_to_bg_penalty.items():
+            if state in allowed:
+                d[state] = likelihood
+        node_to_data_lmap[chunk.idx] = d
+    node_to_state = sample_history(
+            chunk_tree, edge_to_P, chunk_root,
+            fg_track.prior_root_distn, node_to_data_lmap)
+    for chunk_idx, state in node_to_state.items():
+        for v in chunks[chunk_idx].structural_nodes:
+            fg_track.history[v] = node_to_state[chunk_idx]
+    for chunk_edge in chunk_tree.edges():
+        idxa, idxb = chunk_edge
+        ev = chunk_edge_to_event[chunk_edge]
+        ev.sa = node_to_state[idxa]
+        ev.sb = node_to_state[idxb]
 
