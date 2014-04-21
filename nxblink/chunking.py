@@ -10,12 +10,6 @@ Each chunk object will have
  * for each foreground state, the sum of background transition expectations,
    where exp(-sum) will be the emission probability for the foreground state.
 
-This module should replace the MetaNode in the navigation.py module
-and elsewhere in this nxblink package.
-
-Perhaps some of this module should eventually be rewritten
-in a more object oriented style.
-
 """
 from __future__ import division, print_function, absolute_import
 

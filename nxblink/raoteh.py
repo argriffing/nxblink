@@ -12,10 +12,8 @@ import networkx as nx
 import nxmctree
 from nxmctree.sampling import sample_history
 
-from .util import (set_or_confirm_history_state, get_total_rates, get_omega,
-        get_uniformized_P_nx)
+from .util import get_total_rates, get_omega, get_uniformized_P_nx
 from .graphutil import get_edge_tree, partition_nodes
-from .navigation import MetaNode, gen_meta_segments
 from .trajectory import Event
 from .chunking import (get_primary_chunk_tree, get_blinking_chunk_tree,
         resample_using_chunk_tree)
@@ -159,205 +157,6 @@ def init_incomplete_primary_events(T, node_to_tm, edge_to_rate,
     return ev_to_P_nx
 
 
-def get_node_to_meta(T, root, node_to_tm, fg_track):
-    """
-    Create meta nodes representing structural nodes in the tree.
-
-    This is a helper function.
-
-    """
-    P_nx_identity = fg_track.P_nx_identity
-    node_to_meta = {}
-    for v in T:
-        f = partial(set_or_confirm_history_state, fg_track.history, v)
-        fset = fg_track.data[v]
-        m = MetaNode(track=None, P_nx=P_nx_identity,
-                set_sa=f, set_sb=f, fset=fset,
-                tm=node_to_tm[v])
-        node_to_meta[v] = m
-    return node_to_meta
-
-
-#TODO obsolete now that we are using chunk nodes
-def resample_using_meta_node_tree(root, meta_node_tree, mroot,
-        fg_track, node_to_data_lmap):
-    """
-    Resample the states of the foreground process using the meta node tree.
-
-    This is a helper function.
-
-    """
-    # Build the tree whose vertices are edges of the meta node tree.
-    meta_edge_tree, meta_edge_root = get_edge_tree(meta_node_tree, mroot)
-
-    # Create the map from edges of the meta edge tree
-    # to primary state transition matrices.
-    edge_to_P = {}
-    for pair in meta_edge_tree.edges():
-        (ma, mb), (mb2, mc) = pair
-        if mb != mb2:
-            raise Exception('incompatibly constructed meta edge tree')
-        edge_to_P[pair] = mb.P_nx
-
-    # Use nxmctree to sample a history on the meta edge tree.
-    root_data_fset = fg_track.data[root]
-    node_to_data_lmap[meta_edge_root] = dict((s, 1) for s in root_data_fset)
-    meta_edge_to_sampled_state = sample_history(
-            meta_edge_tree, edge_to_P, meta_edge_root,
-            fg_track.prior_root_distn, node_to_data_lmap)
-
-    # Use the sampled history to update the primary history at structural nodes
-    # and to update the primary event transitions.
-    for meta_edge in meta_edge_tree:
-        ma, mb = meta_edge
-        state = meta_edge_to_sampled_state[meta_edge]
-        if ma is not None:
-            ma.set_sb(state)
-        if mb is not None:
-            mb.set_sa(state)
-
-
-# TODO this old version uses meta trees instead of chunk trees
-def old_sample_blink_transitions(T, root, node_to_tm, edge_to_rate, ev_to_P_nx,
-        fg_track, bg_tracks, bg_to_fg_fset, Q_meta):
-    """
-    Sample the history (nodes to states) and the events (edge to event list).
-
-    This function depends on a foreground track
-    and a collection of contextual background tracks.
-
-    """
-    P_nx_identity = fg_track.P_nx_identity
-    node_to_meta = get_node_to_meta(T, root, node_to_tm, fg_track)
-    mroot = node_to_meta[root]
-
-    # Build the tree whose vertices are meta nodes,
-    # and map edges of this tree to sets of feasible foreground states,
-    # accounting for data at structural nodes and background context
-    # along edge segments.
-    #
-    # Also create the map from edges of this tree
-    # to sets of primary states not directly contradicted by data or context.
-    #
-    meta_node_tree = nx.DiGraph()
-    node_to_data_lmap = dict()
-    for edge in T.edges():
-
-        for segment, bg_track_to_state, fg_allowed in gen_meta_segments(
-                edge, node_to_meta, ev_to_P_nx,
-                fg_track, bg_tracks, bg_to_fg_fset):
-            ma, mb = segment
-
-            # Get the set of states allowed by data and background interaction.
-            fsets = []
-            for m in segment:
-                if m.fset is not None:
-                    fsets.append(m.fset)
-            for name, state in bg_track_to_state.items():
-                fsets.append(bg_to_fg_fset[name][state])
-            fg_allowed = set.intersection(*fsets)
-
-            # For each possible foreground state,
-            # use the states of the background tracks and the data
-            # to determine foreground feasibility
-            # and possibly a multiplicative rate penalty.
-            lmap = dict()
-
-            # The lmap has nontrivial penalties
-            # depending on both the background (primary) track state
-            # and the proposed foreground blink state.
-            pri_track = bg_tracks[0]
-            pri_state = bg_track_to_state[pri_track.name]
-            if False in fg_allowed:
-                lmap[False] = 1
-            # The blink state choice of True should be penalized
-            # according to the sum of rates from the current
-            # primary state to primary states controlled by
-            # the proposed foreground track.
-            if True in fg_allowed:
-                if Q_meta.has_edge(pri_state, fg_track.name):
-                    rate_sum = Q_meta[pri_state][fg_track.name]['weight']
-                    amount = rate_sum * edge_to_rate[edge] * (mb.tm - ma.tm)
-                    lmap[True] = np.exp(-amount)
-                else:
-                    lmap[True] = 1
-
-            # Map the segment to the lmap.
-            # Segments will be nodes of the tree whose history will be sampled.
-            node_to_data_lmap[segment] = lmap
-
-            # Add the meta node to the meta node tree.
-            meta_node_tree.add_edge(ma, mb)
-
-    # Resample the states using the meta tree.
-    resample_using_meta_node_tree(root, meta_node_tree, mroot,
-            fg_track, node_to_data_lmap)
-
-
-
-# TODO this old version uses meta trees instead of chunk trees
-def old_sample_primary_transitions(T, root, node_to_tm, ev_to_P_nx,
-        fg_track, bg_tracks, bg_to_fg_fset):
-    """
-    Sample the history (nodes to states) and the events (edge to event list).
-
-    This function depends on a foreground track
-    and a collection of contextual background tracks.
-
-    """
-    P_nx_identity = fg_track.P_nx_identity
-    node_to_meta = get_node_to_meta(T, root, node_to_tm, fg_track)
-    mroot = node_to_meta[root]
-
-    # Build the tree whose vertices are meta nodes,
-    # and map edges of this tree to sets of feasible foreground states,
-    # accounting for data at structural nodes and background context
-    # along edge segments.
-    #
-    # Also create the map from edges of this tree
-    # to sets of primary states not directly contradicted by data or context.
-    #
-    meta_node_tree = nx.DiGraph()
-    node_to_data_lmap = dict()
-    for edge in T.edges():
-
-        for segment, bg_track_to_state, fg_allowed in gen_meta_segments(
-                edge, node_to_meta, ev_to_P_nx,
-                fg_track, bg_tracks, bg_to_fg_fset):
-            ma, mb = segment
-
-            # Get the set of states allowed by data and background interaction.
-            fsets = []
-            for m in segment:
-                if m.fset is not None:
-                    fsets.append(m.fset)
-            for name, state in bg_track_to_state.items():
-                fsets.append(bg_to_fg_fset[name][state])
-            fg_allowed = set.intersection(*fsets)
-
-            # Check feasibility.
-            if not fg_allowed:
-                raise Exception('no foreground state is allowed')
-
-            # Use the states of the background blinking tracks,
-            # together with fsets of the two meta nodes if applicable,
-            # to define the set of feasible foreground states
-            # at this segment.
-            lmap = dict((s, 1) for s in fg_allowed)
-
-            # Map the segment to the lmap.
-            # Segments will be nodes of the tree whose history will be sampled.
-            node_to_data_lmap[segment] = lmap
-
-            # Add the meta node to the meta node tree.
-            #print('adding segment', ma, mb)
-            meta_node_tree.add_edge(ma, mb)
-
-    # Resample the states using the meta tree.
-    resample_using_meta_node_tree(root, meta_node_tree, mroot,
-            fg_track, node_to_data_lmap)
-
-
 def sample_blink_transitions(T, root, node_to_tm, edge_to_rate,
         primary_to_tol, Q_meta, ev_to_P_nx,
         fg_track, primary_track):
@@ -397,6 +196,7 @@ def sample_primary_transitions(T, root, node_to_tm, edge_to_rate,
     # and the foreground event transitions using the chunk tree.
     resample_using_chunk_tree(fg_track, ev_to_P_nx,
             chunk_tree, chunk_root, chunks, chunk_edge_to_event)
+
 
 # was part of blinking_model_rao_teh
 def init_tracks(T, root, node_to_tm, edge_to_rate,

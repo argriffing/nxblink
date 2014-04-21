@@ -7,24 +7,6 @@ from __future__ import division, print_function, absolute_import
 import networkx as nx
 
 
-def do_nothing(state):
-    """
-    Helper function as a placeholder callback.
-
-    """
-    pass
-
-
-def set_or_confirm_history_state(node_to_state, node, state):
-    """
-    Helper function for updating history within a trajectory.
-
-    """
-    if node_to_state.get(node, None) not in (state, None):
-        raise Exception('found a history incompatibility')
-    node_to_state[node] = state
-
-
 def get_omega(total_rates, uniformization_factor):
     max_rate = max(total_rates.values())
     if not max_rate:
