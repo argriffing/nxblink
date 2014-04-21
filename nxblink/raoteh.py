@@ -398,10 +398,10 @@ def sample_primary_transitions(T, root, node_to_tm, edge_to_rate,
     resample_using_chunk_tree(fg_track, ev_to_P_nx,
             chunk_tree, chunk_root, chunks, chunk_edge_to_event)
 
-
 # was part of blinking_model_rao_teh
 def init_tracks(T, root, node_to_tm, edge_to_rate,
-        Q_primary, primary_track, tolerance_tracks, interaction_map):
+        primary_to_tol, Q_primary,
+        primary_track, tolerance_tracks, interaction_map):
     """
     Initialize trajectories of all tracks.
 

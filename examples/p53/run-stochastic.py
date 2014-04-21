@@ -152,7 +152,8 @@ def process_alignment_column(
 
     # Initialize the track trajectories.
     init_tracks(T, root, node_to_tm, edge_to_rate,
-            Q_primary, primary_track, tolerance_tracks, interaction_map)
+            primary_to_tol, Q_primary,
+            primary_track, tolerance_tracks, interaction_map)
 
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)

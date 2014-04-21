@@ -157,7 +157,8 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
 
     # Initialize the tracks.
     init_tracks(T, root, node_to_tm, edge_to_rate,
-            Q_primary, primary_track, tolerance_tracks, interaction_map)
+            primary_to_tol, Q_primary,
+            primary_track, tolerance_tracks, interaction_map)
 
     # Initialize the log likelihood contribution
     # of the initial state at the root.

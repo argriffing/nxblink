@@ -19,6 +19,10 @@ in a more object oriented style.
 """
 from __future__ import division, print_function, absolute_import
 
+import math
+
+import networkx as nx
+
 import nxmctree
 from nxmctree.sampling import sample_history
 
@@ -56,7 +60,8 @@ def _blinking_edge(
     # therefore events are in correspondence to edge segments.
     tracks = (fg_track, primary_track)
     sentinel = (node_to_tm[vb], None)
-    seq = sorted((ev.tm, ev) for t in tracks for ev in t.events) + [sentinel]
+    edge_events = [ev for t in tracks for ev in t.events[edge]]
+    seq = sorted((ev.tm, ev) for ev in edge_events) + [sentinel]
     for next_tm, ev in seq:
 
         # For this segment determine the blink states allowed
@@ -77,8 +82,12 @@ def _blinking_edge(
         # then create a new chunk tree node and add a chunk tree edge.
         # Otherwise if the event is from the primary track,
         # update the primary state.
-        if ev.track is fg_track:
+        if ev is None:
+            # this is the sentinel event for the branch endpoint
+            pass
+        elif ev.track is fg_track:
             next_chunk = Chunk(len(chunks), all_states)
+            chunks.append(next_chunk)
             chunk_edge = (chunk.idx, next_chunk.idx)
             chunk_tree.add_edge(*chunk_edge)
             chunk_edge_to_event[chunk_edge] = ev
@@ -88,8 +97,7 @@ def _blinking_edge(
                 raise Exception
             primary_state = ev.sb
         else:
-            if ev is not None:
-                raise Exception
+            raise Exception
 
         # Update the time.
         tm = next_tm
@@ -140,8 +148,8 @@ def get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
 
     # Define the data restriction on the foreground states for each chunk.
     for chunk in chunks:
-        fg_allowed = [fg_track.data[v] for v in chunk.structural_nodes]
-        chunk.data_allowed_states = set.intersection(*fg_allowed)
+        for v in chunk.structural_nodes:
+            chunk.data_allowed_states &= fg_track.data[v]
 
     # Return the chunk tree, its root, the list of chunk nodes,
     # and the map from chunk tree edges to foreground events.
@@ -150,7 +158,7 @@ def get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
 
 def _primary_edge(
         node_to_tm,
-        primary_to_tol, Q_meta,
+        primary_to_tol,
         edge, edge_rate,
         fg_track, bg_tracks,
         chunk_tree, chunks, node_to_chunk, chunk_edge_to_event):
@@ -174,7 +182,8 @@ def _primary_edge(
     # therefore events are in correspondence to edge segments.
     tracks = [fg_track] + bg_tracks
     sentinel = (node_to_tm[vb], None)
-    seq = sorted((ev.tm, ev) for t in tracks for ev in t.events) + [sentinel]
+    edge_events = [ev for t in tracks for ev in t.events[edge]]
+    seq = sorted((ev.tm, ev) for ev in edge_events) + [sentinel]
     for next_tm, ev in seq:
 
         # For this segment determine the foreground states allowed
@@ -189,17 +198,18 @@ def _primary_edge(
         # then create a new chunk tree node and add a chunk tree edge.
         # Otherwise if the event is from a background track,
         # update the background state.
-        if ev.track is fg_track:
+        if ev is None:
+            # this is the sentinel event for the branch endpoint
+            pass
+        elif ev.track is fg_track:
             next_chunk = Chunk(len(chunks), all_states)
+            chunks.append(next_chunk)
             chunk_edge = (chunk.idx, next_chunk.idx)
             chunk_tree.add_edge(*chunk_edge)
             chunk_edge_to_event[chunk_edge] = ev
             chunk = next_chunk
-        elif ev is None:
-            # this is the sentinel event for the branch endpoint
-            pass
         else:
-            bg_name_to_state[ev.name] = ev.sb
+            bg_name_to_state[ev.track.name] = ev.sb
 
         # Update the time.
         tm = next_tm
@@ -237,15 +247,15 @@ def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
     for edge in nx.bfs_edges(T, root):
         _primary_edge(
                 node_to_tm,
-                primary_to_tol, Q_meta,
+                primary_to_tol,
                 edge, edge_to_rate[edge],
                 fg_track, tolerance_tracks,
                 chunk_tree, chunks, node_to_chunk, chunk_edge_to_event)
 
     # Define the data restriction on the foreground states for each chunk.
     for chunk in chunks:
-        fg_allowed = [fg_track.data[v] for v in chunk.structural_nodes]
-        chunk.data_allowed_states = set.intersection(*fg_allowed)
+        for v in chunk.structural_nodes:
+            chunk.data_allowed_states &= fg_track.data[v]
 
     # Return the chunk tree, its root, the list of chunk nodes,
     # and the map from chunk tree edges to foreground events.
@@ -268,12 +278,12 @@ def resample_using_chunk_tree(
     for chunk in chunks:
         allowed = chunk.data_allowed_states & chunk.bg_allowed_states
         d = {}
-        for state, likelihood in chunk.state_to_bg_penalty.items():
+        for state, penalty in chunk.state_to_bg_penalty.items():
             if state in allowed:
-                d[state] = likelihood
+                d[state] = math.exp(-penalty)
         node_to_data_lmap[chunk.idx] = d
     node_to_state = sample_history(
-            chunk_tree, edge_to_P, chunk_root,
+            chunk_tree, edge_to_P, chunk_root.idx,
             fg_track.prior_root_distn, node_to_data_lmap)
     for chunk_idx, state in node_to_state.items():
         for v in chunks[chunk_idx].structural_nodes:
