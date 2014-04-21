@@ -145,6 +145,49 @@ def get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
     return chunk_tree, chunk_root, chunks, chunk_edge_to_event
 
 
+#TODO under construction
+def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
+        fg_track, tolerance_tracks,
+        ):
+    """
+    Get the chunk tree, when the foreground is the primary process.
+
+    """
+    # All foreground states.
+    all_fg_states = {False, True}
+
+    # Construct the root of the chunk tree, and add it to the list.
+    chunks = []
+    chunk_root = Chunk(len(chunks), all_fg_states)
+    chunk_root.structural_nodes.add(root)
+    chunks.append(chunk_root)
+
+    # Initialize the chunk tree.
+    chunk_tree = nx.DiGraph()
+
+    # Initialize the map from structural node to chunk.
+    node_to_chunk = {root : chunk_root}
+    chunk_edge_to_event = {}
+
+    # Process edges of the original tree one at a time.
+    for edge in nx.bfs_edges(T, root):
+        _blinking_edge(
+                node_to_tm,
+                primary_to_tol, Q_meta,
+                edge, edge_to_rate[edge],
+                fg_track, primary_track,
+                chunk_tree, chunks, node_to_chunk, chunk_edge_to_event)
+
+    # Define the data restriction on the foreground states for each chunk.
+    for chunk in chunks:
+        fg_allowed = [fg_track.data[v] for v in chunk.structural_nodes]
+        chunk.data_allowed_states = set.intersection(*fg_allowed)
+
+    # Return the chunk tree, its root, the list of chunk nodes,
+    # and the map from chunk tree edges to foreground events.
+    return chunk_tree, chunk_root, chunks, chunk_edge_to_event
+
+
 
 def gen_meta_segments(edge, node_to_meta, ev_to_P_nx,
         fg_track, bg_tracks, bg_to_fg_fset):

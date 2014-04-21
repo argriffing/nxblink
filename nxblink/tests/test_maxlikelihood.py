@@ -5,7 +5,8 @@ from __future__ import division, print_function, absolute_import
 from numpy.testing import assert_allclose
 
 import nxblink
-from nxblink.maxlikelihood import get_blink_rate_mle
+from nxblink.maxlikelihood import (
+        get_blink_rate_mle, get_blink_rate_analytical_mle)
 
 def test_blink_rate_mle_a():
     xon_root_count = 6528
@@ -23,8 +24,19 @@ def test_blink_rate_mle_a():
             off_xon_dwell,
             xon_off_dwell,
             )
+    exact_rate_on, exact_rate_off =  get_blink_rate_analytical_mle(
+            xon_root_count,
+            off_root_count,
+            off_xon_count,
+            xon_off_count,
+            off_xon_dwell,
+            xon_off_dwell,
+            )
+    yield assert_allclose, rate_on, exact_rate_on
+    yield assert_allclose, rate_off, exact_rate_off
     yield assert_allclose, rate_on, 1.0, 1e-1
     yield assert_allclose, rate_off, 1.0, 1e-1
+
 
 def test_blink_rate_mle_b():
     xon_root_count = 8811
@@ -42,6 +54,16 @@ def test_blink_rate_mle_b():
             off_xon_dwell,
             xon_off_dwell,
             )
+    exact_rate_on, exact_rate_off =  get_blink_rate_analytical_mle(
+            xon_root_count,
+            off_root_count,
+            off_xon_count,
+            xon_off_count,
+            off_xon_dwell,
+            xon_off_dwell,
+            )
+    yield assert_allclose, rate_on, exact_rate_on
+    yield assert_allclose, rate_off, exact_rate_off
     yield assert_allclose, rate_on, 2.22, 1e-1
     yield assert_allclose, rate_off, 1.0, 1e-1
 

@@ -13,7 +13,6 @@ from __future__ import division, print_function, absolute_import
 from functools import partial
 
 import numpy as np
-
 import scipy.optimize
 
 
@@ -87,6 +86,37 @@ def ll_blink_contribution_gradient(
             -(off_root_count + xon_root_count) / total_rate +
             -xon_off_dwell)
     return d_rate_on, d_rate_off
+
+
+def get_blink_rate_analytical_mle(
+        xon_root_count,
+        off_root_count,
+        off_xon_count,
+        xon_off_count,
+        off_xon_dwell,
+        xon_off_dwell,
+        ):
+    """
+    This closed form is not necessarily better than the other approaches.
+
+    """
+    # Convert to single letter variables for convenience.
+    a = xon_root_count + off_xon_count
+    b = off_root_count + xon_off_count
+    h = off_xon_dwell
+    f = xon_off_dwell
+    u = -(xon_root_count + off_root_count)
+    #
+    z = a*f - 2*a*h - b*h + f*u - h*u
+    xopt = (np.sqrt(z*z - 4*a*h*(h - f)*(a + b + u)) + z) / (2*h*(f-h))
+    #
+    # switch the meanings of variables to make copypasting easier
+    a, b, h, f = b, a, f, h
+    #
+    z = a*f - 2*a*h - b*h + f*u - h*u
+    yopt = (np.sqrt(z*z - 4*a*h*(h - f)*(a + b + u)) + z) / (2*h*(f-h))
+    #
+    return xopt, yopt
 
 
 def get_blink_rate_mle(
