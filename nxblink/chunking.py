@@ -29,6 +29,12 @@ class Chunk(object):
         self.bg_allowed_states = set(all_fg_states)
         self.state_to_bg_penalty = dict((s, 0) for s in all_fg_states)
 
+    def get_lmap(self):
+        lmap = dict()
+        for state in self.data_allowed_states & self.bg_allowed_states:
+            lmap[state] = math.exp(-self.state_to_bg_penalty[state])
+        return lmap
+
 
 def _blinking_edge(
         node_to_tm,
@@ -270,12 +276,7 @@ def resample_using_chunk_tree(
             (edge, ev_to_P_nx[ev]) for edge, ev in chunk_edge_to_event.items())
     node_to_data_lmap = dict()
     for chunk in chunks:
-        allowed = chunk.data_allowed_states & chunk.bg_allowed_states
-        d = {}
-        for state, penalty in chunk.state_to_bg_penalty.items():
-            if state in allowed:
-                d[state] = math.exp(-penalty)
-        node_to_data_lmap[chunk.idx] = d
+        node_to_data_lmap[chunk.idx] = chunk.get_lmap()
     node_to_state = sample_history(
             chunk_tree, edge_to_P, chunk_root.idx,
             fg_track.prior_root_distn, node_to_data_lmap)
