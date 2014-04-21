@@ -13,7 +13,7 @@ import nxmctree
 from nxmctree.sampling import sample_history
 
 from .util import get_total_rates, get_omega, get_uniformized_P_nx
-from .graphutil import get_edge_tree, partition_nodes
+from .navigation import partition_nodes
 from .trajectory import Event
 from .chunking import (get_primary_chunk_tree, get_blinking_chunk_tree,
         resample_using_chunk_tree)

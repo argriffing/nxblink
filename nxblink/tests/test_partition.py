@@ -6,7 +6,7 @@ import networkx as nx
 from numpy.testing import assert_equal
 
 import nxblink
-from nxblink.graphutil import partition_nodes
+from nxblink.navigation import partition_nodes
 
 
 def test_partition():
