@@ -50,7 +50,7 @@ def _blinking_edge(
 
     # Iterate over events sorted by time.
     # Include an edge endpoint as a sentinel event,
-    # sherefore events are in correspondence to edge segments.
+    # therefore events are in correspondence to edge segments.
     tracks = (fg_track, primary_track)
     sentinel = (node_to_tm[vb], None)
     seq = sorted((ev.tm, ev) for t in tracks for ev in t.events) + [sentinel]
@@ -145,8 +145,70 @@ def get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
     return chunk_tree, chunk_root, chunks, chunk_edge_to_event
 
 
-#TODO under construction
+def _primary_edge(
+        node_to_tm,
+        primary_to_tol, Q_meta,
+        edge, edge_rate,
+        fg_track, bg_tracks,
+        chunk_tree, chunks, node_to_chunk, chunk_edge_to_event):
+    """
+    A helper function to build the codon process chunk tree.
+
+    """
+    va, vb = edge
+    all_states = set(primary_to_tol)
+
+    # Initialize the current time, the current chunk,
+    # and the current background states.
+    tm = node_to_tm[va]
+    chunk = node_to_chunk[va]
+    bg_name_to_state = {}
+    for track in bg_tracks:
+        bg_name_to_state[track.name] = track.history[va]
+
+    # Iterate over events sorted by time.
+    # Include an edge endpoint as a sentinel event,
+    # therefore events are in correspondence to edge segments.
+    tracks = [fg_track] + bg_tracks
+    sentinel = (node_to_tm[vb], None)
+    seq = sorted((ev.tm, ev) for t in tracks for ev in t.events) + [sentinel]
+    for next_tm, ev in seq:
+
+        # For this segment determine the foreground states allowed
+        # by the background states.
+        bg_allowed_states = set()
+        for candidate_state, candidate_tolname in primary_to_tol.items():
+            if bg_name_to_state[candidate_tolname]:
+                bg_allowed_states.add(candidate_state)
+        chunk.bg_allowed_states &= bg_allowed_states
+
+        # If the event is a foreground transition
+        # then create a new chunk tree node and add a chunk tree edge.
+        # Otherwise if the event is from a background track,
+        # update the background state.
+        if ev.track is fg_track:
+            next_chunk = Chunk(len(chunks), all_states)
+            chunk_edge = (chunk.idx, next_chunk.idx)
+            chunk_tree.add_edge(*chunk_edge)
+            chunk_edge_to_event[chunk_edge] = ev
+            chunk = next_chunk
+        elif ev is None:
+            # this is the sentinel event for the branch endpoint
+            pass
+        else:
+            bg_name_to_state[ev.name] = ev.sb
+
+        # Update the time.
+        tm = next_tm
+
+    # Associate the endpoint node with the current chunk.
+    chunk.structural_nodes.add(vb)
+    node_to_chunk[vb] = chunk
+
+
 def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
+        primary_to_tol,
+        all_primary_states,
         fg_track, tolerance_tracks,
         ):
     """
@@ -154,7 +216,7 @@ def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
 
     """
     # All foreground states.
-    all_fg_states = {False, True}
+    all_fg_states = all_primary_states
 
     # Construct the root of the chunk tree, and add it to the list.
     chunks = []
@@ -171,11 +233,11 @@ def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
 
     # Process edges of the original tree one at a time.
     for edge in nx.bfs_edges(T, root):
-        _blinking_edge(
+        _primary_edge(
                 node_to_tm,
                 primary_to_tol, Q_meta,
                 edge, edge_to_rate[edge],
-                fg_track, primary_track,
+                fg_track, tolerance_tracks,
                 chunk_tree, chunks, node_to_chunk, chunk_edge_to_event)
 
     # Define the data restriction on the foreground states for each chunk.
@@ -187,65 +249,3 @@ def get_primary_chunk_tree(T, root, node_to_tm, edge_to_rate,
     # and the map from chunk tree edges to foreground events.
     return chunk_tree, chunk_root, chunks, chunk_edge_to_event
 
-
-
-def gen_meta_segments(edge, node_to_meta, ev_to_P_nx,
-        fg_track, bg_tracks, bg_to_fg_fset):
-    # Sequence meta nodes from three sources:
-    # the two structural endpoint nodes,
-    # the nodes representing transitions in background tracks,
-    # and nodes representing transitions in the foreground track.
-    # Note that meta nodes are not meaningfully sortable,
-    # but events are sortable.
-    va, vb = edge
-    tracks = [fg_track] + bg_tracks
-
-    # Concatenate events from all tracks of interest.
-    events = [ev for track in tracks for ev in track.events[edge]]
-
-    # Construct the meta nodes corresponding to sorted events.
-    seq = []
-    for ev in sorted(events):
-        if ev.track is fg_track:
-            m = MetaNode(track=ev.track, P_nx=ev_to_P_nx[ev],
-                    set_sa=ev.init_sa, set_sb=ev.init_sb,
-                    tm=ev.tm)
-        else:
-            m = MetaNode(track=ev.track, P_nx=fg_track.P_nx_identity,
-                    set_sa=do_nothing, set_sb=do_nothing,
-                    transition=(ev.track.name, ev.sa, ev.sb),
-                    tm=ev.tm)
-        seq.append(m)
-    ma = node_to_meta[va]
-    mb = node_to_meta[vb]
-    seq = [ma] + seq + [mb]
-
-    # Initialize background states at the beginning of the edge.
-    bg_track_to_state = {}
-    for bg_track in bg_tracks:
-        bg_track_to_state[bg_track.name] = bg_track.history[va]
-
-    # Add segments of the edge as edges of the meta node tree.
-    # Track the state of each background track at each segment.
-    for segment in zip(seq[:-1], seq[1:]):
-        ma, mb = segment
-
-        # Keep the state of each background track up to date.
-        if ma.transition is not None:
-            name, sa, sb = ma.transition
-            if bg_track_to_state[name] != sa:
-                raise Exception('incompatible transition: '
-                        'current state on track %s is %s '
-                        'but encountered a transition event from '
-                        'state %s to state %s' % (
-                            name, bg_track_to_state[name], sa, sb))
-            bg_track_to_state[name] = sb
-
-        # Get the set of foreground states allowed by the background.
-        # Note that this deliberately does not include the data.
-        fsets = []
-        for name, state in bg_track_to_state.items():
-            fsets.append(bg_to_fg_fset[name][state])
-        fg_allowed = set.intersection(*fsets)
-
-        yield segment, bg_track_to_state, fg_allowed
