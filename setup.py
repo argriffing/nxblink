@@ -10,11 +10,14 @@ DOCLINES = __doc__.split('\n')
 # http://docs.python.org/2/distutils/setupscript.html
 #
 # It is meant to be installed through github using pip.
+#
+# More stuff was added for cython extensions.
 
 from distutils.core import setup
 
-# This idiom is used by scipy to check if it is running during the setup.
-__NXBLINK_SETUP__ = True
+from distutils.extension import Extension
+
+from Cython.Distutils import build_ext
 
 setup(
         name='nxblink',
@@ -26,6 +29,7 @@ setup(
         packages=['nxblink'],
         test_suite='nose.collector',
         package_data={'nxblink' : ['tests/test_*.py']},
+        cmdclass={'build_ext' : build_ext},
+        ext_modules=[Extension('nxblink.hello', ['nxblink/hello.pyx'])],
         )
-
 
