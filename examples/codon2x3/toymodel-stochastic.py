@@ -48,9 +48,11 @@ from nxblink.summary import (BlinkSummary,
 from nxblink.raoteh import (
         init_tracks, gen_samples,
         update_track_data_for_zero_blen)
+from nxblink.toymodel import BlinkModelA, BlinkModelB, BlinkModelC
+from nxblink.toymodel import DataA, DataB, DataC, DataD
 
-import nxmodel
-import nxmodelb
+#import nxmodel
+#import nxmodelb
 
 
 ###############################################################################
@@ -319,165 +321,17 @@ def main(args):
     """
 
     """
-    # define the model
-    if args.model == 'nxmodel':
-        model = nxmodel
-    elif args.model == 'nxmodelb':
-        model = nxmodelb
-    else:
-        raise Exception
+    # Define the model.
+    model = {'a' : ModelA, 'b' : ModelB, 'c' : ModelC}[args.model]
 
     # Get the analog of the genetic code.
     # Define track interactions.
     primary_to_tol = model.get_primary_to_tol()
     interaction_map = get_interaction_map(primary_to_tol)
 
-    if args.data == 0:
-        # No data.
-        data = {
-                'PRIMARY' : {
-                    'N0' : {0, 1, 2, 3, 4, 5},
-                    'N1' : {0, 1, 2, 3, 4, 5},
-                    'N2' : {0, 1, 2, 3, 4, 5},
-                    'N3' : {0, 1, 2, 3, 4, 5},
-                    'N4' : {0, 1, 2, 3, 4, 5},
-                    'N5' : {0, 1, 2, 3, 4, 5},
-                    },
-                'T0' : {
-                    'N0' : {False, True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {False, True},
-                    'N4' : {False, True},
-                    'N5' : {False, True},
-                    },
-                'T1' : {
-                    'N0' : {False, True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {False, True},
-                    'N4' : {False, True},
-                    'N5' : {False, True},
-                    },
-                'T2' : {
-                    'N0' : {False, True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {False, True},
-                    'N4' : {False, True},
-                    'N5' : {False, True},
-                    },
-                }
-    elif args.data == 1:
-        # Alignment data only.
-        data = {
-                'PRIMARY' : {
-                    'N0' : {0},
-                    'N1' : {0, 1, 2, 3, 4, 5},
-                    'N2' : {0, 1, 2, 3, 4, 5},
-                    'N3' : {4},
-                    'N4' : {5},
-                    'N5' : {1},
-                    },
-                'T0' : {
-                    'N0' : {True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {False, True},
-                    'N4' : {False, True},
-                    'N5' : {True},
-                    },
-                'T1' : {
-                    'N0' : {False, True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {False, True},
-                    'N4' : {False, True},
-                    'N5' : {False, True},
-                    },
-                'T2' : {
-                    'N0' : {False, True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {True},
-                    'N4' : {True},
-                    'N5' : {False, True},
-                    },
-                }
-    elif args.data == 2:
-        # Alignment and disease data.
-        data = {
-                'PRIMARY' : {
-                    'N0' : {0},
-                    'N1' : {0, 1, 2, 3, 4, 5},
-                    'N2' : {0, 1, 2, 3, 4, 5},
-                    'N3' : {4},
-                    'N4' : {5},
-                    'N5' : {1},
-                    },
-                'T0' : {
-                    'N0' : {True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {False, True},
-                    'N4' : {False, True},
-                    'N5' : {True},
-                    },
-                'T1' : {
-                    'N0' : {False},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {False, True},
-                    'N4' : {False, True},
-                    'N5' : {False, True},
-                    },
-                'T2' : {
-                    'N0' : {True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {True},
-                    'N4' : {True},
-                    'N5' : {False, True},
-                    },
-                }
-    elif args.data == 3:
-        # Alignment and fully observed disease data.
-        data = {
-                'PRIMARY' : {
-                    'N0' : {0},
-                    'N1' : {0, 1, 2, 3, 4, 5},
-                    'N2' : {0, 1, 2, 3, 4, 5},
-                    'N3' : {4},
-                    'N4' : {5},
-                    'N5' : {1},
-                    },
-                'T0' : {
-                    'N0' : {True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {True},
-                    'N4' : {True},
-                    'N5' : {True},
-                    },
-                'T1' : {
-                    'N0' : {False},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {True},
-                    'N4' : {True},
-                    'N5' : {True},
-                    },
-                'T2' : {
-                    'N0' : {True},
-                    'N1' : {False, True},
-                    'N2' : {False, True},
-                    'N3' : {True},
-                    'N4' : {True},
-                    'N5' : {True},
-                    },
-                }
-    else:
-        raise Exception
+    # Define the data class and the data map.
+    dataclass = [DataA, DataB, DataC, DataD][args.data]
+    data = dataclass.get_data()
 
     # Run the stochastic analysis.
     run(model, primary_to_tol, interaction_map, data)
@@ -487,7 +341,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model',
-            choices=('nxmodel', 'nxmodelb'), default='nxmodel',
+            choices=('a', 'b', 'c'), default='a',
             help='specify the model complexity')
     parser.add_argument('--data',
             choices=(0, 1, 2, 3), type=int, default=0,
