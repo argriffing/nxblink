@@ -65,7 +65,7 @@ def get_blink_distn():
 
 def get_Q_primary():
     """
-    This is like a symmetric codon rate matrix that is not normalized.
+    This is like an unnormalized codon rate matrix.
 
     This rate matrix has the following differences from the code2x3 matrix.
     The primary state 1 gets more probability, so it has twice as much rate in,

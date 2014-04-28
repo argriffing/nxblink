@@ -1,7 +1,8 @@
 # Run this using R CMD BATCH mkplot.R
 
 # read the table
-x <- read.table('data2.table')
+#x <- read.table('data2.table')
+x <- read.table('april-25-em.table')
 
 # plot the 'on' rates
 png('plot-on-rate.png')

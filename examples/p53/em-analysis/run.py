@@ -1,11 +1,15 @@
 from __future__ import print_function
 
+#fn = 'em-data.txt'
+fn = 'full-sequence-em.out'
+
+
 def main():
 
     # read rates on and off from a hardcoded file name
     rates_on = []
     rates_off = []
-    with open('em-data.txt') as fin:
+    with open(fn) as fin:
         for line in fin:
             if line.startswith('rate on'):
                 rates_on.append(float(line.split()[-1]))

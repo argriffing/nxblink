@@ -14,11 +14,13 @@ from collections import defaultdict
 
 import networkx as nx
 
+#TODO finish removing code related to interaction maps
 
-__all__ = ['get_interaction_map', 'get_Q_blink', 'get_Q_meta']
+#__all__ = ['get_interaction_map', 
+__all__ = ['get_Q_blink', 'get_Q_meta']
 
 
-def _get_primary_interaction_map(primary_to_part):
+def x_get_primary_interaction_map(primary_to_part):
     """
     Helper function for get_interaction_map.
 
@@ -44,7 +46,7 @@ def _get_primary_interaction_map(primary_to_part):
     return interaction
 
 
-def _get_tolerance_interaction_map(primary_to_part):
+def x_get_tolerance_interaction_map(primary_to_part):
     """
     Helper function for get_interaction_map.
 
@@ -73,7 +75,7 @@ def _get_tolerance_interaction_map(primary_to_part):
     return interaction
 
 
-def get_interaction_map(primary_to_part):
+def x_get_interaction_map(primary_to_part):
     interaction = {}
     interaction.update(_get_primary_interaction_map(primary_to_part))
     interaction.update(_get_tolerance_interaction_map(primary_to_part))
