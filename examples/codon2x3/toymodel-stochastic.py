@@ -38,7 +38,8 @@ import nxmctree
 from nxmctree.sampling import sample_history
 
 import nxblink
-from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
+from nxblink.model import get_Q_blink, get_Q_meta
+#from nxblink.model import get_interaction_map
 from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.maxlikelihood import get_blink_rate_mle
@@ -50,9 +51,6 @@ from nxblink.raoteh import (
         update_track_data_for_zero_blen)
 from nxblink.toymodel import BlinkModelA, BlinkModelB, BlinkModelC
 from nxblink.toymodel import DataA, DataB, DataC, DataD
-
-#import nxmodel
-#import nxmodelb
 
 
 ###############################################################################
@@ -82,7 +80,8 @@ def get_blink_dwell_times(T, node_to_tm, blink_tracks):
     return dwell_off, dwell_on
 
 
-def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
+#def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
+def run(model, primary_to_tol, track_to_node_to_data_fset):
 
     # Get the rooted directed tree shape.
     T, root = model.get_T_and_root()
@@ -160,7 +159,8 @@ def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
     # Initialize the tracks.
     init_tracks(T, root, node_to_tm, edge_to_rate,
             primary_to_tol, Q_primary,
-            primary_track, tolerance_tracks, interaction_map)
+            #primary_track, tolerance_tracks, interaction_map)
+            primary_track, tolerance_tracks)
 
     # Initialize the log likelihood contribution
     # of the initial state at the root.
@@ -327,14 +327,15 @@ def main(args):
     # Get the analog of the genetic code.
     # Define track interactions.
     primary_to_tol = model.get_primary_to_tol()
-    interaction_map = get_interaction_map(primary_to_tol)
+    #interaction_map = get_interaction_map(primary_to_tol)
 
     # Define the data class and the data map.
     dataclass = [DataA, DataB, DataC, DataD][args.data]
     data = dataclass.get_data()
 
     # Run the stochastic analysis.
-    run(model, primary_to_tol, interaction_map, data)
+    #run(model, primary_to_tol, interaction_map, data)
+    run(model, primary_to_tol, data)
     print()
 
 

@@ -19,6 +19,8 @@ from .chunking import (get_primary_chunk_tree, get_blinking_chunk_tree,
         resample_using_chunk_tree)
 from .poisson import sample_primary_poisson_events, sample_blink_poisson_events
 
+#TODO stop using the generic interaction map
+
 
 def update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks):
     """
@@ -202,7 +204,7 @@ def sample_primary_transitions(T, root, node_to_tm, edge_to_rate,
 # was part of blinking_model_rao_teh
 def init_tracks(T, root, node_to_tm, edge_to_rate,
         primary_to_tol, Q_primary,
-        primary_track, tolerance_tracks, interaction_map):
+        primary_track, tolerance_tracks):
     """
     Initialize trajectories of all tracks.
 
