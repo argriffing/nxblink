@@ -11,7 +11,7 @@ class Data(object):
     @classmethod
     def get_data(cls):
         data = dict()
-        data.update(cls.get_primary_data())
+        data.update({'PRIMARY' : cls.get_primary_data()})
         data.update(cls.get_tolerance_data())
         return data
 

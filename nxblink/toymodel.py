@@ -16,8 +16,8 @@ class BlinkModel(object):
     """
     @classmethod
     def get_blink_distn(self):
-        rate_on = get_rate_on()
-        rate_off = get_rate_off()
+        rate_on = self.get_rate_on()
+        rate_off = self.get_rate_off()
         total = rate_on + rate_off
         distn = {
                 0 : rate_off / total,
