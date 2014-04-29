@@ -4,7 +4,7 @@ Rao-Teh CTBN sampling, specialized to a class of blinking models.
 """
 from __future__ import division, print_function, absolute_import
 
-from functools import partial
+from collections import defaultdict
 
 import numpy as np
 import networkx as nx
@@ -12,14 +12,152 @@ import networkx as nx
 import nxmctree
 from nxmctree.sampling import sample_history
 
-from .util import get_total_rates, get_omega, get_uniformized_P_nx
+from .util import (get_total_rates, get_omega, get_uniformized_P_nx,
+        get_node_to_tm)
 from .navigation import partition_nodes
 from .trajectory import Event
 from .chunking import (get_primary_chunk_tree, get_blinking_chunk_tree,
         resample_using_chunk_tree)
 from .poisson import sample_primary_poisson_events, sample_blink_poisson_events
+from .model import get_interaction_map, get_Q_blink, get_Q_meta
+from .trajectory import Trajectory
 
-#TODO stop using the generic interaction map
+
+def gen_samples(model, data, nburnin, nsamples):
+    """
+    Sample trajectories from the conditional distribution.
+
+    This is a convenience function.
+
+    Parameters
+    ----------
+    model : object
+        A source of information about the model.
+        This includes
+         * get_blink_distn
+         * get_primary_to_tol
+         * get_T_and_root
+         * get_rate_on
+         * get_rate_off
+         * get_primary_distn
+         * get_Q_primary
+         * get_edge_to_blen
+    data : object
+        A source of information about the data at nodes of the tree graph.
+        This includes
+         * get_data
+         * get_primary_data
+         * get_tolerance_data
+        The get_data() member function returns a map from a foreground track
+        to a map from a background state to a set of allowed foreground states.
+    nburnin : integer
+        The number of iterations of burn in.
+    nsamples: integer
+        The number of iterations of yielded sampled trajectories after burn in.
+
+    """
+    # Extract information from the model and data.
+    primary_to_tol = model.get_primary_to_tol()
+    track_to_node_to_data_fset = data.get_data()
+
+    # Pre-compute the interaction map.
+    interaction_map = get_interaction_map(primary_to_tol)
+
+    # Get the rooted directed tree shape.
+    T, root = model.get_T_and_root()
+
+    # Get the map from ordered tree edge to branch length.
+    # The branch length has complicated units.
+    # It is the expected number of primary process transitions
+    # along the branch conditional on all tolerance classes being tolerated.
+    edge_to_blen = model.get_edge_to_blen()
+
+    # Initialize the map from edge to rate.
+    edge_to_rate = dict((k, 1) for k in edge_to_blen)
+
+    # Swap branch-specific lengths with branch-specific rates.
+    edge_to_blen, edge_to_rate = edge_to_rate, edge_to_blen
+
+    # Convert the branch length map to a node time map.
+    node_to_tm = get_node_to_tm(T, root, edge_to_blen)
+
+    # Define the uniformization factor.
+    uniformization_factor = 2
+
+    # Define the primary rate matrix.
+    Q_primary = model.get_Q_primary()
+
+    # Define the prior primary state distribution.
+    primary_distn = model.get_primary_distn()
+
+    # Normalize the primary rate matrix to have expected rate 1.
+    expected_primary_rate = 0
+    for sa, sb in Q_primary.edges():
+        p = primary_distn[sa]
+        rate = Q_primary[sa][sb]['weight']
+        expected_primary_rate += p * rate
+    #
+    #print('pure primary process expected rate:')
+    #print(expected_primary_rate)
+    #print()
+    #
+    for sa, sb in Q_primary.edges():
+        Q_primary[sa][sb]['weight'] /= expected_primary_rate
+
+    # Define primary trajectory.
+    primary_track = Trajectory(
+            name='PRIMARY', data=track_to_node_to_data_fset['PRIMARY'],
+            history=dict(), events=dict(),
+            prior_root_distn=primary_distn, Q_nx=Q_primary,
+            uniformization_factor=uniformization_factor)
+
+    # Define the rate matrix for a single blinking trajectory.
+    rate_on = model.get_rate_on()
+    rate_off = model.get_rate_off()
+    Q_blink = get_Q_blink(rate_on=rate_on, rate_off=rate_off)
+    blink_distn = model.get_blink_distn()
+
+    # Define rates from a primary state to adjacent primary states
+    # controlled by a given tolerance class.
+    Q_meta = get_Q_meta(Q_primary, primary_to_tol)
+
+    # Define tolerance process trajectories.
+    tolerance_names = set(primary_to_tol.values())
+    tolerance_tracks = []
+    for name in tolerance_names:
+        track = Trajectory(
+                name=name, data=track_to_node_to_data_fset[name],
+                history=dict(), events=dict(),
+                prior_root_distn=blink_distn, Q_nx=Q_blink,
+                uniformization_factor=uniformization_factor)
+        tolerance_tracks.append(track)
+
+    # Update track data, accounting for branches with length zero.
+    tracks = [primary_track] + tolerance_tracks
+    update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks)
+
+    # Initialize the tracks.
+    init_tracks(T, root, node_to_tm, edge_to_rate,
+            primary_to_tol, Q_primary,
+            primary_track, tolerance_tracks)
+
+    # sample correlated trajectories using rao teh on the blinking model
+    ncounted = 0
+    for i, (pri_track, tol_tracks) in enumerate(_gen_samples(
+            T, root, node_to_tm, edge_to_rate,
+            primary_to_tol, Q_meta,
+            primary_track, tolerance_tracks, interaction_map)):
+        nsampled = i+1
+        if nsampled <= nburnin:
+            continue
+
+        # Yield some information about the sampled trajectories.
+        yield primary_track, tolerance_tracks
+
+        # Loop control.
+        ncounted += 1
+        if ncounted == nsamples:
+            break
 
 
 def update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks):
@@ -229,8 +367,7 @@ def init_tracks(T, root, node_to_tm, edge_to_rate,
     primary_track.remove_self_transitions()
 
 
-# was part of blinking_model_rao_teh
-def gen_samples(T, root, node_to_tm, edge_to_rate,
+def _gen_samples(T, root, node_to_tm, edge_to_rate,
         primary_to_tol, Q_meta,
         primary_track, tolerance_tracks, interaction_map):
     """
