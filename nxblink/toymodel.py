@@ -11,7 +11,7 @@ __all__ = ['BlinkModelA', 'BlinkModelB', 'BlinkModelC']
 
 class BlinkModel(object):
     """
-    This class has functions common to all of the toy models.
+    Blinking process toy model base class.
 
     """
     @classmethod
@@ -58,7 +58,10 @@ class BlinkModel(object):
 
 
 class BlinkModelA(BlinkModel):
+    """
+    Plain toy blinking model with much symmetry.
 
+    """
     @classmethod
     def get_rate_on(self):
         return 1.0

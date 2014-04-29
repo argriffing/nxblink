@@ -59,8 +59,11 @@ def get_blink_dwell_times(T, node_to_tm, blink_tracks):
     return dwell_off, dwell_on
 
 
-#def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
-def run(model, primary_to_tol, track_to_node_to_data_fset, k):
+def run(model, dataclass, k):
+
+    # Extract information from the model and data.
+    primary_to_tol = model.get_primary_to_tol()
+    track_to_node_to_data_fset = dataclass.get_data()
 
     # Pre-compute the interaction map.
     interaction_map = get_interaction_map(primary_to_tol)
@@ -299,32 +302,20 @@ def run(model, primary_to_tol, track_to_node_to_data_fset, k):
     print()
 
 
-def main(model_name, data_level, k):
-    """
-
-    """
-    # Define the model.
-    name_to_model = {'a' : BlinkModelA, 'b' : BlinkModelB, 'c' : BlinkModelC}
-    model = name_to_model[model_name]
-
-    # Get the analog of the genetic code.
-    # Define track interactions.
-    primary_to_tol = model.get_primary_to_tol()
-
-    # Define the data class and the data map.
-    dataclass = [DataA, DataB, DataC, DataD][data_level]
-    data = dataclass.get_data()
-
-    # Run the stochastic analysis.
-    run(model, primary_to_tol, data, k)
-    print()
+def get_short_description(x):
+    # helper function
+    if not x.__doc__:
+        return '[no description]'
+    else:
+        return x.__doc__.lstrip().splitlines()[0]
 
 
 def test_me():
     k = 4
-    for model_name in ('a', 'b', 'c'):
-        for data_level in range(4):
-            print('model name:', model_name)
-            print('data level:', data_level)
-            main(model_name, data_level, k)
+    for model in BlinkModelA, BlinkModelB, BlinkModelC:
+        for dataclass in DataA, DataB, DataC, DataD:
+            print('model:', get_short_description(model))
+            print('data:', get_short_description(dataclass))
+            run(model, dataclass, k)
+            print()
 

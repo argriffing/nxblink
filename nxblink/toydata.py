@@ -8,6 +8,10 @@ __all__ = ['DataA', 'DataB', 'DataC', 'DataD']
 
 
 class Data(object):
+    """
+    Data base class.
+
+    """
     @classmethod
     def get_data(cls):
         data = dict()
