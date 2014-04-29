@@ -15,12 +15,11 @@ from nxmctree.sampling import sample_history
 from .util import (get_total_rates, get_omega, get_uniformized_P_nx,
         get_node_to_tm)
 from .navigation import partition_nodes
-from .trajectory import Event
+from .trajectory import Trajectory, Event
 from .chunking import (get_primary_chunk_tree, get_blinking_chunk_tree,
         resample_using_chunk_tree)
 from .poisson import sample_primary_poisson_events, sample_blink_poisson_events
 from .model import get_interaction_map, get_Q_blink, get_Q_meta
-from .trajectory import Trajectory
 
 
 def gen_samples(model, data, nburnin, nsamples):
