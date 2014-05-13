@@ -26,6 +26,15 @@ class BlinkModel(object):
         return distn
 
     @classmethod
+    def get_Q_blink(self):
+        Q_blink = nx.DiGraph()
+        Q_blink.add_weighted_edges_from((
+            (0, 1, self.get_rate_on()),
+            (1, 0, self.get_rate_off()),
+            ))
+        return Q_blink
+
+    @classmethod
     def get_primary_to_tol(self):
         """
         Return a map from primary state to tolerance track name.
@@ -55,6 +64,17 @@ class BlinkModel(object):
             ('N2', 'N4'),
             ])
         return T, 'N1'
+
+    @classmethod
+    def get_edge_to_blen(self):
+        edge_to_blen = {
+                ('N1', 'N0') : 1.0,
+                ('N1', 'N2') : 1.0,
+                ('N1', 'N5') : 1.0,
+                ('N2', 'N3') : 1.0,
+                ('N2', 'N4') : 1.0,
+                }
+        return edge_to_blen
 
 
 class BlinkModelA(BlinkModel):
@@ -102,15 +122,15 @@ class BlinkModelA(BlinkModel):
         return Q_primary
 
     @classmethod
-    def get_edge_to_blen(self):
-        edge_to_blen = {
+    def get_edge_to_rate(self):
+        edge_to_rate = {
                 ('N1', 'N0') : 0.5,
                 ('N1', 'N2') : 0.5,
                 ('N1', 'N5') : 0.5,
                 ('N2', 'N3') : 0.5,
                 ('N2', 'N4') : 0.5,
                 }
-        return edge_to_blen
+        return edge_to_rate
 
 
 class BlinkModelB(BlinkModel):
@@ -183,7 +203,7 @@ class BlinkModelB(BlinkModel):
         return Q_primary
 
     @classmethod
-    def get_edge_to_blen(self):
+    def get_edge_to_rate(self):
         """
         Some of these branch lengths are larger and smaller than usual.
 
@@ -192,15 +212,15 @@ class BlinkModelB(BlinkModel):
         and another arbitrary branch is half as long.
 
         """
-        blen = 0.5
-        edge_to_blen = {
-                ('N1', 'N0') : blen,
-                ('N1', 'N2') : blen,
-                ('N1', 'N5') : blen,
-                ('N2', 'N3') : 2.0*blen,
-                ('N2', 'N4') : 0.5*blen,
+        rate = 0.5
+        edge_to_rate = {
+                ('N1', 'N0') : rate,
+                ('N1', 'N2') : rate,
+                ('N1', 'N5') : rate,
+                ('N2', 'N3') : 2.0*rate,
+                ('N2', 'N4') : 0.5*rate,
                 }
-        return edge_to_blen
+        return edge_to_rate
 
 
 class BlinkModelC(BlinkModelB):
@@ -209,13 +229,13 @@ class BlinkModelC(BlinkModelB):
 
     """
     @classmethod
-    def get_edge_to_blen(self):
-        blen = 0.5
-        edge_to_blen = {
+    def get_edge_to_rate(self):
+        rate = 0.5
+        edge_to_rate = {
                 ('N1', 'N0') : 0,
                 ('N1', 'N2') : 0,
-                ('N1', 'N5') : blen,
-                ('N2', 'N3') : 2.0*blen,
-                ('N2', 'N4') : 0.5*blen,
+                ('N1', 'N5') : rate,
+                ('N2', 'N3') : 2.0*rate,
+                ('N2', 'N4') : 0.5*rate,
                 }
-        return edge_to_blen
+        return edge_to_rate

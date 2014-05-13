@@ -50,11 +50,8 @@ from nxblink.raoteh import (
         init_tracks, gen_samples,
         update_track_data_for_zero_blen)
 from nxblink.toymodel import BlinkModelA, BlinkModelB, BlinkModelC
-from nxblink.toymodel import DataA, DataB, DataC, DataD
+from nxblink.toydata import DataA, DataB, DataC, DataD
 
-
-###############################################################################
-# Classes and functions for steps of Rao Teh iteration.
 
 
 def get_blink_dwell_times(T, node_to_tm, blink_tracks):
@@ -80,95 +77,29 @@ def get_blink_dwell_times(T, node_to_tm, blink_tracks):
     return dwell_off, dwell_on
 
 
-#def run(model, primary_to_tol, interaction_map, track_to_node_to_data_fset):
-def run(model, primary_to_tol, track_to_node_to_data_fset):
+#TODO update this code to use the more sophisticated raoteh.gen_samples
+#TODO in particular avoid boilerplate code related to generating the samples
+#TODO and focus on computing and reporting summaries of the sampled histories
+def run(model, data, nburnin, nsamples):
+    """
+    The args are the same as for nxblink.raoteh.gen_samples(...).
 
-    # Get the rooted directed tree shape.
+    """
+    # Extract some information from the model.
     T, root = model.get_T_and_root()
-
-    # Get the map from ordered tree edge to branch length.
-    # The branch length has complicated units.
-    # It is the expected number of primary process transitions
-    # along the branch conditional on all tolerance classes being tolerated.
     edge_to_blen = model.get_edge_to_blen()
-
-    # Initialize the map from edge to rate.
-    edge_to_rate = dict((k, 1) for k in edge_to_blen)
-
-    #TODO for testing
-    edge_to_blen, edge_to_rate = edge_to_rate, edge_to_blen
-
-    # Convert the branch length map to a node time map.
-    node_to_tm = get_node_to_tm(T, root, edge_to_blen)
-
-    # Define the uniformization factor.
-    uniformization_factor = 2
-
-    # Define the primary rate matrix.
-    Q_primary = model.get_Q_primary()
-
-    # Define the prior primary state distribution.
+    edge_to_rate = model.get_edge_to_rate()
+    primary_to_tol = model.get_primary_to_tol()
     primary_distn = model.get_primary_distn()
-    nprimary = 6
-
-    # Normalize the primary rate matrix to have expected rate 1.
-    expected_primary_rate = 0
-    for sa, sb in Q_primary.edges():
-        p = primary_distn[sa]
-        rate = Q_primary[sa][sb]['weight']
-        expected_primary_rate += p * rate
-    #
-    #print('pure primary process expected rate:')
-    #print(expected_primary_rate)
-    #print()
-    #
-    for sa, sb in Q_primary.edges():
-        Q_primary[sa][sb]['weight'] /= expected_primary_rate
-
-    # Define primary trajectory.
-    primary_track = Trajectory(
-            name='PRIMARY', data=track_to_node_to_data_fset['PRIMARY'],
-            history=dict(), events=dict(),
-            prior_root_distn=primary_distn, Q_nx=Q_primary,
-            uniformization_factor=uniformization_factor)
-
-    # Define the rate matrix for a single blinking trajectory.
-    rate_on = model.get_rate_on()
-    rate_off = model.get_rate_off()
-    Q_blink = get_Q_blink(rate_on=rate_on, rate_off=rate_off)
     blink_distn = model.get_blink_distn()
-
-    # Define rates from a primary state to adjacent primary states
-    # controlled by a given tolerance class.
+    Q_primary = model.get_Q_primary()
+    Q_blink = model.get_Q_blink()
     Q_meta = get_Q_meta(Q_primary, primary_to_tol)
-
-    # Define tolerance process trajectories.
-    tolerance_tracks = []
-    for name in ('T0', 'T1', 'T2'):
-        track = Trajectory(
-                name=name, data=track_to_node_to_data_fset[name],
-                history=dict(), events=dict(),
-                prior_root_distn=blink_distn, Q_nx=Q_blink,
-                uniformization_factor=uniformization_factor)
-        tolerance_tracks.append(track)
-
-    # Update track data, accounting for branches with length zero.
-    tracks = [primary_track] + tolerance_tracks
-    update_track_data_for_zero_blen(T, edge_to_blen, edge_to_rate, tracks)
-
-    # Initialize the tracks.
-    init_tracks(T, root, node_to_tm, edge_to_rate,
-            primary_to_tol, Q_primary,
-            #primary_track, tolerance_tracks, interaction_map)
-            primary_track, tolerance_tracks)
+    node_to_tm = get_node_to_tm(T, root, edge_to_blen)
 
     # Initialize the log likelihood contribution
     # of the initial state at the root.
     ell_init_contrib = 0
-    
-    # Initialize contributions of the dwell times on each edge
-    # to the expected log likelihood.
-    edge_to_ell_dwell_contrib = defaultdict(float)
     
     # Initialize contributions of the dwell times on each edge
     # to the expected log likelihood.
@@ -180,23 +111,14 @@ def run(model, primary_to_tol, track_to_node_to_data_fset):
 
     # sample correlated trajectories using rao teh on the blinking model
     va_vb_type_to_count = defaultdict(int)
-    nsamples = args.k * args.k
-    burnin = nsamples // 10
-    ncounted = 0
     total_dwell_off = 0
     total_dwell_on = 0
     blink_summary = BlinkSummary()
-    for i, (pri_track, tol_tracks) in enumerate(gen_samples(
-            T, root, node_to_tm, edge_to_rate,
-            primary_to_tol, Q_meta,
-            primary_track, tolerance_tracks, interaction_map)):
-        nsampled = i+1
-        if nsampled <= burnin:
-            continue
+    for pri_track, tol_tracks in gen_samples(model, data, nburnin, nsamples):
 
         # Compute a summary.
         blink_summary.on_sample(T, root, node_to_tm, edge_to_rate,
-                primary_track, tolerance_tracks, primary_to_tol)
+                pri_track, tol_tracks, primary_to_tol)
 
         # Summarize the trajectories.
         for edge in T.edges():
@@ -227,7 +149,7 @@ def run(model, primary_to_tol, track_to_node_to_data_fset):
         ll_init = get_ell_init_contrib(
                 root,
                 primary_distn, blink_distn,
-                primary_track, tolerance_tracks, primary_to_tol)
+                pri_track, tol_tracks, primary_to_tol)
         ell_init_contrib += ll_init
 
         # Get the contributions of the dwell times on each edge
@@ -235,7 +157,7 @@ def run(model, primary_to_tol, track_to_node_to_data_fset):
         d = get_ell_dwell_contrib(
                 T, root, node_to_tm, edge_to_rate,
                 Q_primary, Q_blink, Q_meta,
-                primary_track, tolerance_tracks, primary_to_tol)
+                pri_track, tol_tracks, primary_to_tol)
         for k, v in d.items():
             edge_to_ell_dwell_contrib[k] += v
 
@@ -244,19 +166,14 @@ def run(model, primary_to_tol, track_to_node_to_data_fset):
         d = get_ell_trans_contrib(
                 T, root, edge_to_rate,
                 Q_primary, Q_blink,
-                primary_track, tolerance_tracks)
+                pri_track, tol_tracks)
         for k, v in d.items():
             edge_to_ell_trans_contrib[k] += v
-
-        # Loop control.
-        ncounted += 1
-        if ncounted == nsamples:
-            break
 
     # report infos
 
     # summary of the run
-    print('burnin:', burnin)
+    print('burnin:', nburnin)
     print('samples after burnin:', nsamples)
 
     # transition expectations on edges by transition type
@@ -318,25 +235,12 @@ def run(model, primary_to_tol, track_to_node_to_data_fset):
 
 
 def main(args):
-    """
-
-    """
-    # Define the model.
-    model = {'a' : ModelA, 'b' : ModelB, 'c' : ModelC}[args.model]
-
-    # Get the analog of the genetic code.
-    # Define track interactions.
-    primary_to_tol = model.get_primary_to_tol()
-    #interaction_map = get_interaction_map(primary_to_tol)
-
-    # Define the data class and the data map.
-    dataclass = [DataA, DataB, DataC, DataD][args.data]
-    data = dataclass.get_data()
-
-    # Run the stochastic analysis.
-    #run(model, primary_to_tol, interaction_map, data)
-    run(model, primary_to_tol, data)
-    print()
+    models = {'a' : BlinkModelA, 'b' : BlinkModelB, 'c' : BlinkModelC}
+    model = models[args.model]
+    data = [DataA, DataB, DataC, DataD][args.data]
+    nburnin = args.k
+    nsamples = args.k * args.k
+    run(model, data, nburnin, nsamples)
 
 
 if __name__ == '__main__':

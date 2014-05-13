@@ -2,6 +2,7 @@ from __future__ import print_function
 
 #fn = 'em-data.txt'
 fn = 'full-sequence-em.out'
+#fn = 'em-output-may-2-2014.out'
 
 
 def main():

@@ -72,10 +72,7 @@ def gen_samples(model, data, nburnin, nsamples):
     edge_to_blen = model.get_edge_to_blen()
 
     # Initialize the map from edge to rate.
-    edge_to_rate = dict((k, 1) for k in edge_to_blen)
-
-    # Swap branch-specific lengths with branch-specific rates.
-    edge_to_blen, edge_to_rate = edge_to_rate, edge_to_blen
+    edge_to_rate = model.get_edge_to_rate()
 
     # Convert the branch length map to a node time map.
     node_to_tm = get_node_to_tm(T, root, edge_to_blen)
@@ -220,7 +217,6 @@ def init_complete_blink_events(T, node_to_tm, edge_to_rate, track):
         edge_tmb = node_to_tm[vb]
         edge_length = edge_tmb - edge_tma
         edge_rate = edge_to_rate[edge]
-
         events = []
         if edge_length and edge_rate:
             if not sa:
@@ -264,7 +260,6 @@ def init_incomplete_primary_events(T, node_to_tm, edge_to_rate,
         edge_tmb = node_to_tm[vb]
         edge_length = edge_tmb - edge_tma
         edge_rate = edge_to_rate[edge]
-
         events = []
         if edge_length and edge_rate:
 
@@ -306,8 +301,7 @@ def sample_blink_transitions(T, root, node_to_tm, edge_to_rate,
     # Get the partition of the tree into chunks.
     info = get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
             primary_to_tol, Q_meta,
-            fg_track, primary_track,
-            use_bg_penalty=True)
+            fg_track, primary_track)
     chunk_tree, chunk_root, chunks, chunk_edge_to_event = info
 
     # Resample the foreground track history

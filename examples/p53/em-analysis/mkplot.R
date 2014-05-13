@@ -2,7 +2,8 @@
 
 # read the table
 #x <- read.table('data2.table')
-x <- read.table('april-25-em.table')
+#x <- read.table('april-25-em.table')
+x <- read.table('out.table')
 
 # plot the 'on' rates
 png('plot-on-rate.png')

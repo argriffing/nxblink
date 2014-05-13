@@ -41,8 +41,7 @@ def _blinking_edge(
         primary_to_tol, Q_meta,
         edge, edge_rate,
         fg_track, primary_track,
-        chunk_tree, chunks, node_to_chunk, chunk_edge_to_event,
-        use_bg_penalty=True):
+        chunk_tree, chunks, node_to_chunk, chunk_edge_to_event):
     """
     A helper function to build the blinking chunk tree.
 
@@ -74,11 +73,10 @@ def _blinking_edge(
         chunk.bg_allowed_states &= bg_allowed_states
 
         # Add the codon transition rate penalty for the True blink state.
-        if use_bg_penalty:
-            if Q_meta.has_edge(primary_state, fg_track.name):
-                rate_sum = Q_meta[primary_state][fg_track.name]['weight']
-                amount = rate_sum * edge_rate * (next_tm - tm)
-                chunk.state_to_bg_penalty[True] += amount
+        if Q_meta.has_edge(primary_state, fg_track.name):
+            rate_sum = Q_meta[primary_state][fg_track.name]['weight']
+            amount = rate_sum * edge_rate * (next_tm - tm)
+            chunk.state_to_bg_penalty[True] += amount
 
         # If the event is a foreground transition
         # then create a new chunk tree node and add a chunk tree edge.
@@ -111,9 +109,7 @@ def _blinking_edge(
 
 def get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
         primary_to_tol, Q_meta,
-        fg_track, primary_track,
-        use_bg_penalty=True,
-        ):
+        fg_track, primary_track):
     """
     Get the chunk tree, when the foreground is a blinking process.
 
@@ -147,8 +143,7 @@ def get_blinking_chunk_tree(T, root, node_to_tm, edge_to_rate,
                 primary_to_tol, Q_meta,
                 edge, edge_to_rate[edge],
                 fg_track, primary_track,
-                chunk_tree, chunks, node_to_chunk, chunk_edge_to_event,
-                use_bg_penalty=use_bg_penalty)
+                chunk_tree, chunks, node_to_chunk, chunk_edge_to_event)
 
     # Define the data restriction on the foreground states for each chunk.
     for chunk in chunks:
