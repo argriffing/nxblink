@@ -95,7 +95,9 @@ def main(args):
         elif status == UNKNOWN:
             raise NotImplementedError(
                     'unknown amino acid status in the reference process '
-                    'requires integrating over too many things')
+                    'required integrating over too many things in the earlier '
+                    'model that Liwen used, so we are avoiding this '
+                    'interpretation')
         else:
             raise Exception('invalid disease status: ' + str(status))
     pos_to_benign_residues = dict(pos_to_benign_residues)

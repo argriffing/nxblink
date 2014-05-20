@@ -4,6 +4,24 @@ Functions to compute summaries of the tracks of the blinking process.
 In particular, compute statistics that additively contribute to
 the expected log likelihood.
 
+track:
+    overall:
+        - sample count
+    initial state at root:
+        - count of each primary state
+        - count of tolerance classes unnecessarily on
+        - count of tolerance classes off
+    at each edge of the tree:
+        transition summary:
+            - number of each primary state transition
+            - number of on->off transitions
+            - number of off->on transitions
+        dwell summary:
+            - for each potential primary state transition,
+              total time spent in a state that allows the transition
+            - dwell time weighted by number of unnecessarily on tol classes
+            - dwell time weighted by number of off tol classes
+
 """
 from __future__ import division, print_function, absolute_import
 
