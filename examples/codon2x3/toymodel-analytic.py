@@ -4,6 +4,10 @@ This toy model is described in raoteh/examples/codon2x3.
 """
 from __future__ import division, print_function, absolute_import
 
+#TODO move this into npblink which is more suited to work with dense
+#     matrices (e.g. for computing exact expectations through
+#     frechet derivatives).
+
 import argparse
 
 import networkx as nx
