@@ -26,6 +26,9 @@ track:
 from __future__ import division, print_function, absolute_import
 
 import math
+from collections import defaultdict
+
+import networkx as nx
 
 from .navigation import gen_segments
 
@@ -36,6 +39,65 @@ __all__ = [
         'get_ell_trans_contrib',
         'BlinkSummary',
         ]
+
+
+class Summary(object):
+    """
+    This is a completely generic summary.
+
+    It should certainly capture sufficient statistics for the full trajectory,
+    even allowing per-edge rates.
+    Note that no rates are required for this summary.
+    The tree is required to not change across samples.
+
+    Parameters
+    ----------
+    T : DiGraph
+        tree directed from the root, annotations are ignored
+    root : hashable
+        root node of the tree
+    node_to_tm : dict
+        map from node to time elapsed since root
+    primary_to_tol : dict
+        map from primary state to tolerance class
+
+    """
+    def __init__(self, T, root, node_to_tm, primary_to_tol):
+
+        # store some args
+        self._T = T
+        self._root = root
+        self._node_to_tm = node_to_tm
+        self._primary_to_tol = primary_to_tol
+
+        # temporary edge list for initializing the summaries
+        edges = T.edges()
+
+        # overall summary
+        self.nsamples = 0
+
+        # summary of the state at the root
+        self.root_pri_to_count = defaultdict(int)
+        self.root_xon_count = defaultdict(int)
+        self.root_off_count = defaultdict(int)
+
+        # per-edge summary of transitions
+        self.edge_to_pri_trans = dict((e, DiGraph()) for e in edges)
+        self.edge_to_off_xon_trans = dict((e, defaultdict(int)) for e in edges)
+        self.edge_to_xon_off_trans = dict((e, defaultdict(int)) for e in edges)
+
+        # per-edge summary of dwell times
+        self.edge_to_pri_dwell = dict((e, DiGraph()) for e in edges)
+        self.edge_to_off_xon_dwell = dict(
+                (e, defaultdict(float)) for e in edges)
+        self.edge_to_xon_off_dwell = dict(
+                (e, defaultdict(float)) for e in edges)
+    
+    def on_sample(self, primary_track, tolerance_tracks):
+        """
+
+        """
+        pass
 
 
 def get_ell_init_contrib(
@@ -207,9 +269,7 @@ class BlinkSummary(object):
                 if tol_track.name != tol_name:
                     tol_state = track_to_state[tol_track.name]
                     if tol_state:
-                        #print('true', tol_state, amount)
                         self.xon_off_dwell += amount
                     else:
-                        #print('false', tol_state, amount)
                         self.off_xon_dwell += amount
 
