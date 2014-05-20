@@ -57,7 +57,7 @@ class Data(object):
         for v in self._all_nodes:
             primary_map[v] = all_primary_states
         for name, codon in zip(self._names, self._codon_column):
-            leaf = name_to_leaf[name]
+            leaf = self._name_to_leaf[name]
             primary_map[leaf] = {self._codon_to_state[codon]}
         return primary_map
 

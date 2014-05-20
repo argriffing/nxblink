@@ -134,7 +134,8 @@ class Model(object):
     def __init__(self,
             kappa, omega, A, C, G, T,
             rate_on, rate_off,
-            tree, root, edge_to_blen, edge_to_rate,
+            tree, root,
+            edge_to_blen, edge_to_rate,
             ):
         """
 
@@ -149,6 +150,7 @@ class Model(object):
         self._rate_on = rate_on
         self._rate_off = rate_off
         self._tree = tree
+        self._root = root
         self._edge_to_blen = edge_to_blen
         self._edge_to_rate = edge_to_rate
 
