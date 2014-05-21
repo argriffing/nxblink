@@ -27,6 +27,8 @@ provided with automatic differentiation through algopy.
 """
 from __future__ import division, print_function, absolute_import
 
+from functools import partial
+
 import numpy as np
 from scipy.optimize import minimize
 
@@ -78,7 +80,7 @@ def objective(summary, edges, genetic_code, log_params):
     expected_rate = get_expected_rate(pre_Q, distn)
 
     # initialize expected log likelihood using the right data type
-    ell = algopy.zeros(1, dtype=distn)[0]
+    ell = algopy.zeros(3, dtype=distn)[0]
 
     # root primary state contribution to expected log likelihood
     obs = algopy.zeros_like(distn)
@@ -93,7 +95,7 @@ def objective(summary, edges, genetic_code, log_params):
         ell = ell + summary.root_xon_count * log(blink_distn[1])
 
     # contributions per edge
-    for edge in edges:
+    for edge, edge_rate in zip(edges, edge_rates):
 
         # extract edge summaries for transitions
         pri_trans = summary.edge_to_pri_trans[edge]
@@ -104,6 +106,53 @@ def objective(summary, edges, genetic_code, log_params):
         pri_dwell = summary.edge_to_pri_dwell[edge]
         off_xon_dwell = summary.edge_to_off_xon_dwell[edge]
         xon_off_dwell = summary.edge_to_xon_off_dwell[edge]
+
+        # Initialize the total number of all types of transitions.
+        # This is for making adjustments according to the edge rate
+        # and the expected rate of the pre-rate-matrix.
+        transition_count_sum = 0
+
+        # contribution of primary transition summary to expected log likelihood
+        for sa in pri_trans:
+            for sb in pri_trans[sa]:
+                count = pri_trans[sa][sb]['weight']
+                pri_count_sum += count
+                if count:
+                    ell = ell + count * log(pre_Q[sa, sb])
+
+        # contribution of blink transition summary to expected log likelihood
+        if off_xon_trans:
+            transition_count_sum += off_xon_trans
+            ell = ell + off_xon_trans * log(blink_on)
+        if xon_off_trans:
+            transition_count_sum += xon_off_trans
+            ell = ell + xon_off_trans * log(blink_off)
+
+        # add the adjustment for edge-specific rate and pre-rate-matrix scaling
+        ell = ell + transition_count_sum * log(edge_rate / expected_rate)
+        
+        # compute a scaled sum of dwell times
+        ell_dwell = algopy.zeros(1, dtype=distn)[0]
+
+        # contribution of dwell times associated with primary transitions
+        for sa in pri_dwell:
+            for sb in pri_dwell[sa]:
+                elapsed = pri_dwell[sa][sb]['weight']
+                if elapsed:
+                    ell_dwell = ell_dwell + elapsed * pre_Q[sa, sb]
+
+        # contribution of dwell times associated with tolerance transitions
+        if off_xon_dwell:
+            ell_dwell = ell_dwell + off_xon_dwell * blink_on
+        if xon_off_dwell:
+            ell_dwell = ell_dwell + xon_off_dwell * blink_off
+
+        # Add the dwell time contribution,
+        # adjusted for edge-specific rate and pre-rate-matrix scaling.
+        ell = ell - ell_dwell * (edge_rate / expected_rate)
+
+    # return the negative expected log likelihood
+    return -ell
 
 
 def maximization_step(summary, genetic_code,
@@ -130,6 +179,28 @@ def maximization_step(summary, genetic_code,
 
     # pack the initial parameter estimates into a point estimate
     x0 = pack_params(kappa, omega, A, C, G, T, blink_on, blink_off)
+
+    # stash the summary, edges, and genetic code into the rate matrix
+    f = partial(objective, summary, edges, genetic_code)
+    g = partial(eval_grad, f)
+    h = partial(eval_hess, f)
+
+    # maximize the log likelihood
+    result = minimize(f, x0, method='trust-ncg', jac=g, hess=h)
+
+    # unpack the parameters
+    unpacked, penalty = unpack_params(result.x)
+    kappa, omega, A, C, G, T, blink_on, blink_off, edge_rates = unpacked
+
+    # possibly mention the negative log likelihood and the penalty
+    print(result)
+    print('penalty:', penalty)
+
+    # convert the edge rates back into a dict
+    edge_to_rate = dict(zip(edges, edge_rates))
+
+    # return the parameter estimates
+    return kappa, omega, A, C, G, T, blink_on, blink_off, edge_rates
 
 
 def pack_params(kappa, omega, A, C, G, T, blink_on, blink_off, edge_rates):

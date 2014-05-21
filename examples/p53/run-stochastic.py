@@ -27,13 +27,14 @@ from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.maxlikelihood import get_blink_rate_mle
 from nxblink.trajectory import Trajectory
-from nxblink.summary import (BlinkSummary,
+from nxblink.summary import (BlinkSummary, Summary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         init_tracks, gen_samples, update_track_data_for_zero_blen)
 
 import p53model
 import p53data
+import p53em
 
 
 BENIGN = 'BENIGN'
@@ -54,8 +55,8 @@ def main(args):
     tree, root, edge_to_blen, name_to_leaf = p53model.get_tree_info()
     all_nodes = set(tree)
     human_leaf = name_to_leaf['Has']
-    print('tree type:', type(tree))
-    print('tree edges:', tree.edges())
+    #print('tree type:', type(tree))
+    #print('tree edges:', tree.edges())
     for edge in tree.edges():
         if edge not in edge_to_blen:
             raise Exception(edge)
@@ -127,7 +128,7 @@ def main(args):
     rate_off = 0.5
     param_info = p53model._get_jeff_params_e()
     kappa, omega, A, C, T, G, rho, d_tree, d_root, leaf_name_pairs = param_info
-    print('tree edges:', tree.edges())
+    #print('tree edges:', tree.edges())
     model = p53model.Model(
             kappa, omega, A, C, G, T,
             rate_on, rate_off,
@@ -148,12 +149,16 @@ def main(args):
     # Outer EM loop.
     for em_iteration in itertools.count(1):
 
+        # Initialize the summary for the expectation step
+        # of the current EM iteration.
+        summary = Summary(tree, root, node_to_tm, primary_to_tol, Q_primary)
+
         # Summaries of blinking states.
-        Q_blink = model.get_Q_blink()
-        blink_distn = model.get_blink_distn()
+        #Q_blink = model.get_Q_blink()
+        #blink_distn = model.get_blink_distn()
 
         # Summarize some codon column histories.
-        blink_summary = BlinkSummary()
+        #blink_summary = BlinkSummary()
         for i, codon_column in enumerate(selected_codon_columns):
             pos = i + 1
             benign_residues = pos_to_benign_residues.get(pos, set())
@@ -167,33 +172,36 @@ def main(args):
                     codon_column,
                     )
 
-            print('edge_to_blen:', edge_to_blen)
+            #print('edge_to_blen:', edge_to_blen)
             for track_info in gen_samples(model, data, nburnin, nsamples):
 
                 # Unpack the tracks.
                 primary_track, tolerance_tracks = track_info
 
+                # Summarize the sampled trajectories.
+                summary.on_sample(primary_track, tolerance_tracks)
+
                 # Summarize the trajectories with respect to blink parameters.
-                blink_summary.on_sample(tree, root, node_to_tm, edge_to_rate,
-                        primary_track, tolerance_tracks, primary_to_tol)
+                #blink_summary.on_sample(tree, root, node_to_tm, edge_to_rate,
+                        #primary_track, tolerance_tracks, primary_to_tol)
 
         # Estimate new blinking rates.
-        rate_on, rate_off =  get_blink_rate_mle(
-                blink_summary.xon_root_count,
-                blink_summary.off_root_count,
-                blink_summary.off_xon_count,
-                blink_summary.xon_off_count,
-                blink_summary.off_xon_dwell,
-                blink_summary.xon_off_dwell,
-                )
-        print('xon_root_count:', blink_summary.xon_root_count)
-        print('off_root_count:', blink_summary.off_root_count)
-        print('off_xon_count:', blink_summary.off_xon_count)
-        print('xon_off_count:', blink_summary.xon_off_count)
-        print('off_xon_dwell:', blink_summary.off_xon_dwell)
-        print('xon_off_dwell:', blink_summary.xon_off_dwell)
-        print('finished EM iteration', em_iteration)
-        sys.stdout.flush()
+        #rate_on, rate_off =  get_blink_rate_mle(
+                #blink_summary.xon_root_count,
+                #blink_summary.off_root_count,
+                #blink_summary.off_xon_count,
+                #blink_summary.xon_off_count,
+                #blink_summary.off_xon_dwell,
+                #blink_summary.xon_off_dwell,
+                #)
+        #print('xon_root_count:', blink_summary.xon_root_count)
+        #print('off_root_count:', blink_summary.off_root_count)
+        #print('off_xon_count:', blink_summary.off_xon_count)
+        #print('xon_off_count:', blink_summary.xon_off_count)
+        #print('off_xon_dwell:', blink_summary.off_xon_dwell)
+        #print('xon_off_dwell:', blink_summary.xon_off_dwell)
+        #print('finished EM iteration', em_iteration)
+        #sys.stdout.flush()
 
 
 if __name__ == '__main__':
