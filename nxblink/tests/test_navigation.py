@@ -8,13 +8,6 @@ import nxblink
 from nxblink.navigation import gen_segments
 from nxblink.trajectory import LightTrajectory, Event
 
-def _check_segment(
-        actual_tma, actual_tmb, actual_track_to_state,
-        desired_tma, desired_tmb, desired_track_to_state):
-    assert_equal(actual_tma, desired_tma)
-    assert_equal(actual_tmb, desired_tmb)
-    assert_equal(actual_track_to_state, desired_track_to_state)
-
 def test_gen_segments():
     va = 'A'
     vb = 'B'
@@ -31,6 +24,8 @@ def test_gen_segments():
     track_c.events = {edge : [
         Event(track_c, 5, 'a', 'b'),
         Event(track_c, 6, 'b', 'c')]}
+
+    # test segmentation for poisson
     tracks = [track_a, track_b, track_c]
     expected_triples = [
             (4.0, 5.0, {'ta':1, 'tb':'x', 'tc':'a'}),
@@ -42,4 +37,3 @@ def test_gen_segments():
             ]
     for i, triple in enumerate(gen_segments(edge, node_to_tm, tracks)):
         assert_equal(triple, expected_triples[i])
-

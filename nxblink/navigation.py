@@ -47,49 +47,37 @@ def partition_nodes(T, edge_to_blen, edge_to_rate):
 
 def gen_segments(edge, node_to_tm, tracks):
     """
-    Iterate over segments, tracking all track states.
+    Iterate over segments, tracking trajectory states.
 
-    This is a helper function for sampling poisson events.
+    This is a helper function for dwell time calculations.
     On each segment, neither the background nor the foreground state changes.
 
     """
     va, vb = edge
-    edge_tma = node_to_tm[va]
-    edge_tmb = node_to_tm[vb]
-
-    # Concatenate events from all tracks of interest.
-    events = [ev for track in tracks for ev in track.events[edge]]
-
-    # Construct tuples corresponding to sorted events or nodes.
-    # No times should coincide.
-    seq = [(ev.tm, ev.track, ev.sa, ev.sb) for ev in events]
-    info_a = (edge_tma, None, None, None)
-    info_b = (edge_tmb, None, None, None)
-    seq = [info_a] + sorted(seq) + [info_b]
-
-    # Initialize track states at the beginning of the edge.
+    tm = node_to_tm[va]
     track_to_state = dict((t.name, t.history[va]) for t in tracks)
 
-    # Iterate over segments of the edge.
-    for segment in zip(seq[:-1], seq[1:]):
-        info_a, info_b = segment
-        tma, tracka, saa, sba = info_a
-        tmb, trackb, sab, sbb = info_b
-        blen = tmb - tma
+    # make a time-ordered list of events plus a sentinel
+    events = [ev for t in tracks for ev in t.events[edge]]
+    seq = [(ev.tm, ev) for ev in events] + [(node_to_tm[vb], None)]
 
-        # Keep the state of each track up to date.
-        if tracka is not None:
-            tm, track, sa, sb = info_a
-            name = tracka.name
-            if track_to_state[name] != sa:
+    # for each interval, add dwell time contributions
+    for tm_next, ev in sorted(seq):
+
+        # report the information for this segment
+        yield tm, tm_next, track_to_state
+
+        # update the state and time
+        if ev is not None:
+            name = ev.track.name
+            if track_to_state[name] != ev.sa:
                 raise Exception('incompatible transition: '
                         'current state on track %s is %s '
                         'but encountered a transition event from '
                         'state %s to state %s' % (
-                            name, track_to_state[name], sa, sb))
-            track_to_state[name] = sb
-
-        yield tma, tmb, track_to_state
+                            name, track_to_state[name], ev.sa, ev.sb))
+            track_to_state[name] = ev.sb
+            tm = tm_next
 
 
 def gen_context_segments(edge, node_to_tm, bg_tracks, fg_track):

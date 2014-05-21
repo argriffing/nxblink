@@ -41,6 +41,15 @@ __all__ = [
         ]
 
 
+def _gen_segments_for_dwell(edge, node_to_tm, pri_track, tol_tracks):
+    tracks = [pri_track] + tol_tracks
+    for tma, tmb, track_to_state in gen_segments(edge, node_to_tm, tracks):
+        elapsed = tmb - tma
+        pri_state = track_to_state[pri_track.name]
+        tol_states = dict((t.name, s) for t in tol_tracks)
+        yield elapsed, pri_state, tol_states
+
+
 class Summary(object):
     """
     This is a completely generic summary.
@@ -104,9 +113,18 @@ class Summary(object):
 
         # add info per edge
         for edge in self._T.edges():
+
+            # transition summaries
             self._on_primary_trans(edge, primary_track)
             self._on_tolerance_trans(edge, tolerance_tracks)
-            self._on_sample_edge_dwell(edge, primary_track, tolerance_tracks)
+
+            # dwell time summaries
+            for elapsed, pri_state, tol_states in _gen_segments_for_dwell(
+                    edge, node_to_tm, pri_track, tol_tracks):
+
+                # dwell time contributions per segment
+                self._on_primary_dwell(edge, elapsed, pri_state, tol_states)
+                self._on_tolerance_dwell(edge, elapsed, pri_state, tol_states)
 
     def _on_sample_root(self, primary_track, tolerance_tracks):
         pri_state = primary_track.history[self._root]
@@ -138,47 +156,6 @@ class Summary(object):
                     self.edge_to_off_xon_trans[edge] += 1
                 else:
                     raise Exception
-
-    #TODO use this code in gen_segments, and add more unit tests
-    def _on_sample_edge_dwell(self,
-            edge, primary_track, tolerance_tracks):
-        """
-
-        """
-        # unpack the edge
-        edge_va, edge_vb = edge
-
-        # initialize the trajectory state at the beginning of the edge
-        tm = self._node_to_tm[edge_va]
-        pri_state = primary_track.history[edge_va]
-        tol_states = {}
-        for tol_track in tolerance_tracks:
-            tol_states[t.name] = tol_track.history[edge_va]]
-
-        # make a time-ordered list of events plus a sentinel
-        tracks = [primary_track] + tolerance_tracks
-        events = [ev for t in tracks for ev in t.events[edge]]
-        sentinel = (self._node_to_tm[edge_vb], None)
-        seq = sorted((ev.tm, ev) for ev in events) + [sentinel]
-
-        # for each interval, add dwell time contributions
-        for tm_next, ev in seq:
-
-            # compute the amount of time spent in this segment
-            elapsed = tm_next - tm
-
-            # compute the dwell time summaries
-            self._on_primary_dwell(edge, elapsed, pri_state, tol_states)
-            self._on_tolerance_dwell(edge, elapsed, pri_state, tol_states)
-
-            # update the state and time
-            if ev is not None:
-                tm = tm_next
-                track = ev.track
-                if track is primary_track:
-                    pri_state = ev.sb
-                else:
-                    tol_states[track.name] = ev.sb
 
     def _on_primary_dwell(self, edge, elapsed, pri_state, tol_states):
         # add elapsed time to all available primary state transitions
