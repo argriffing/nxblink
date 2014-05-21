@@ -50,6 +50,10 @@ def eval_hess(f, theta):
     return algopy.UTPM.extract_hessian(len(theta), f(theta))
 
 
+def hamming_distance(a, b):
+    return sum(1 for x, y in zip(a, b))
+
+
 def objective(summary, edges, genetic_code, log_params):
     """
     Compute the objective function to minimize.
@@ -116,7 +120,7 @@ def objective(summary, edges, genetic_code, log_params):
         for sa in pri_trans:
             for sb in pri_trans[sa]:
                 count = pri_trans[sa][sb]['weight']
-                pri_count_sum += count
+                transition_count_sum += count
                 if count:
                     ell = ell + count * log(pre_Q[sa, sb])
 
@@ -129,7 +133,8 @@ def objective(summary, edges, genetic_code, log_params):
             ell = ell + xon_off_trans * log(blink_off)
 
         # add the adjustment for edge-specific rate and pre-rate-matrix scaling
-        ell = ell + transition_count_sum * log(edge_rate / expected_rate)
+        if transition_count_sum:
+            ell = ell + transition_count_sum * log(edge_rate / expected_rate)
         
         # compute a scaled sum of dwell times
         ell_dwell = algopy.zeros(1, dtype=distn)[0]
@@ -178,7 +183,7 @@ def maximization_step(summary, genetic_code,
     edges, edge_rates = zip(*edge_to_rate.items())
 
     # pack the initial parameter estimates into a point estimate
-    x0 = pack_params(kappa, omega, A, C, G, T, blink_on, blink_off)
+    x0 = pack_params(kappa, omega, A, C, G, T, blink_on, blink_off, edge_rates)
 
     # stash the summary, edges, and genetic code into the rate matrix
     f = partial(objective, summary, edges, genetic_code)
@@ -321,5 +326,5 @@ def get_distn(genetic_code, kappa, omega, A, C, G, T):
 
 
 def get_expected_rate(pre_Q, distn):
-    return pre_Q.sum(axis=1).dot(distn)
+    return algopy.dot(pre_Q.sum(axis=1), distn)
 

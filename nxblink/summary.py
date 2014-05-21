@@ -46,7 +46,7 @@ def _gen_segments_for_dwell(edge, node_to_tm, pri_track, tol_tracks):
     for tma, tmb, track_to_state in gen_segments(edge, node_to_tm, tracks):
         elapsed = tmb - tma
         pri_state = track_to_state[pri_track.name]
-        tol_states = dict((t.name, s) for t in tol_tracks)
+        tol_states = dict((t.name, track_to_state[t.name]) for t in tol_tracks)
         yield elapsed, pri_state, tol_states
 
 
@@ -95,12 +95,12 @@ class Summary(object):
         self.root_off_count = 0
 
         # per-edge summary of transitions
-        self.edge_to_pri_trans = dict((e, DiGraph()) for e in edges)
+        self.edge_to_pri_trans = dict((e, nx.DiGraph()) for e in edges)
         self.edge_to_off_xon_trans = defaultdict(int)
         self.edge_to_xon_off_trans = defaultdict(int)
 
         # per-edge summary of dwell times
-        self.edge_to_pri_dwell = dict((e, DiGraph()) for e in edges)
+        self.edge_to_pri_dwell = dict((e, nx.DiGraph()) for e in edges)
         self.edge_to_off_xon_dwell = defaultdict(float)
         self.edge_to_xon_off_dwell = defaultdict(float)
     
@@ -120,7 +120,7 @@ class Summary(object):
 
             # dwell time summaries
             for elapsed, pri_state, tol_states in _gen_segments_for_dwell(
-                    edge, node_to_tm, pri_track, tol_tracks):
+                    edge, self._node_to_tm, primary_track, tolerance_tracks):
 
                 # dwell time contributions per segment
                 self._on_primary_dwell(edge, elapsed, pri_state, tol_states)
@@ -128,7 +128,7 @@ class Summary(object):
 
     def _on_sample_root(self, primary_track, tolerance_tracks):
         pri_state = primary_track.history[self._root]
-        self.root_pri_to_count[s] += 1
+        self.root_pri_to_count[pri_state] += 1
         for tol_track in tolerance_tracks:
             tol_state = tol_track.history[self._root]
             if not tol_state:
@@ -138,11 +138,11 @@ class Summary(object):
 
     def _on_primary_trans(self, edge, primary_track):
         # the order of the transitions does not matter in this step
-        G = self._edge_to_pri_trans[edge]
+        G = self.edge_to_pri_trans[edge]
         for ev in primary_track.events[edge]:
             trans = (ev.sa, ev.sb)
             if G.has_edge(*trans):
-                G[*trans]['weight'] += 1
+                G[ev.sa][ev.sb]['weight'] += 1
             else:
                 G.add_edge(*trans, weight=1)
 
@@ -165,7 +165,7 @@ class Summary(object):
             if tol_states[tol_class_b]:
                 trans = (pri_state, pri_state_b)
                 if G.has_edge(*trans):
-                    G[*trans]['weight'] += elapsed
+                    G[pri_state][pri_state_b]['weight'] += elapsed
                 else:
                     G.add_edge(*trans, weight=elapsed)
 

@@ -187,8 +187,8 @@ def main(args):
 
         # use the summary to estimate parameters
         params = p53em.maximization_step(summary, genetic_code,
-                kappa, omega, A, C, G, T, blink_on, blink_off, edge_to_rate)
-        kappa, omega, A, C, G, T, blink_on, blink_off, edge_to_rate = params
+                kappa, omega, A, C, G, T, rate_on, rate_off, edge_to_rate)
+        kappa, omega, A, C, G, T, rate_on, rate_off, edge_to_rate = params
 
         # report the new parameter estimates
         print('kappa:', kappa)
@@ -197,7 +197,7 @@ def main(args):
         print('P(C):', C)
         print('P(G):', G)
         print('P(T):', T)
-        print('blink_on:', blink_on)
+        print('rate_on:', rate_on)
         print('blink_off:', blink_off)
         print('edge-specific rate estimates:')
         for edge, rate in edge_to_rate.items():
