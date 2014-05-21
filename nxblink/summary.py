@@ -45,7 +45,7 @@ class Summary(object):
     """
     This is a completely generic summary.
 
-    It should certainly capture sufficient statistics for the full trajectory,
+    It should capture sufficient statistics for the full trajectory,
     even allowing per-edge rates.
     Note that no rates are required for this summary.
     The tree is required to not change across samples.
@@ -60,15 +60,19 @@ class Summary(object):
         map from node to time elapsed since root
     primary_to_tol : dict
         map from primary state to tolerance class
+    Q_primary : DiGraph
+        Primary process rate matrix.
+        In this function it is used only for its sparsity pattern.
 
     """
-    def __init__(self, T, root, node_to_tm, primary_to_tol):
+    def __init__(self, T, root, node_to_tm, primary_to_tol, Q_primary):
 
         # store some args
         self._T = T
         self._root = root
         self._node_to_tm = node_to_tm
         self._primary_to_tol = primary_to_tol
+        self._Q_primary = Q_primary
 
         # temporary edge list for initializing the summaries
         edges = T.edges()
@@ -78,28 +82,128 @@ class Summary(object):
 
         # summary of the state at the root
         self.root_pri_to_count = defaultdict(int)
-        self.root_xon_count = defaultdict(int)
-        self.root_off_count = defaultdict(int)
+        self.root_xon_count = 0
+        self.root_off_count = 0
 
         # per-edge summary of transitions
         self.edge_to_pri_trans = dict((e, DiGraph()) for e in edges)
-        self.edge_to_off_xon_trans = dict((e, defaultdict(int)) for e in edges)
-        self.edge_to_xon_off_trans = dict((e, defaultdict(int)) for e in edges)
+        self.edge_to_off_xon_trans = defaultdict(int)
+        self.edge_to_xon_off_trans = defaultdict(int)
 
         # per-edge summary of dwell times
         self.edge_to_pri_dwell = dict((e, DiGraph()) for e in edges)
-        self.edge_to_off_xon_dwell = dict(
-                (e, defaultdict(float)) for e in edges)
-        self.edge_to_xon_off_dwell = dict(
-                (e, defaultdict(float)) for e in edges)
+        self.edge_to_off_xon_dwell = defaultdict(float)
+        self.edge_to_xon_off_dwell = defaultdict(float)
     
     def on_sample(self, primary_track, tolerance_tracks):
         """
 
         """
-        pass
+        # add the root counts
+        self._on_sample_root(primary_track, tolerance_tracks)
+
+        # add info per edge
+        for edge in self._T.edges():
+            self._on_primary_trans(edge, primary_track)
+            self._on_tolerance_trans(edge, tolerance_tracks)
+            self._on_sample_edge_dwell(edge, primary_track, tolerance_tracks)
+
+    def _on_sample_root(self, primary_track, tolerance_tracks):
+        pri_state = primary_track.history[self._root]
+        self.root_pri_to_count[s] += 1
+        for tol_track in tolerance_tracks:
+            tol_state = tol_track.history[self._root]
+            if not tol_state:
+                self.root_off_count += 1
+            elif tol_state != self._primary_to_tol[pri_state]:
+                self.root_xon_count += 1
+
+    def _on_primary_trans(self, edge, primary_track):
+        # the order of the transitions does not matter in this step
+        G = self._edge_to_pri_trans[edge]
+        for ev in primary_track.events[edge]:
+            trans = (ev.sa, ev.sb)
+            if G.has_edge(*trans):
+                G[*trans]['weight'] += 1
+            else:
+                G.add_edge(*trans, weight=1)
+
+    def _on_tolerance_trans(self, edge, tolerance_tracks):
+        # the order of the transitions does not matter in this step
+        for track in tolerance_tracks:
+            for ev in track.events[edge]:
+                if ev.sa and not ev.sb:
+                    self.edge_to_xon_off_trans[edge] += 1
+                elif not ev.sa and ev.sb:
+                    self.edge_to_off_xon_trans[edge] += 1
+                else:
+                    raise Exception
+
+    #TODO use this code in gen_segments, and add more unit tests
+    def _on_sample_edge_dwell(self,
+            edge, primary_track, tolerance_tracks):
+        """
+
+        """
+        # unpack the edge
+        edge_va, edge_vb = edge
+
+        # initialize the trajectory state at the beginning of the edge
+        tm = self._node_to_tm[edge_va]
+        pri_state = primary_track.history[edge_va]
+        tol_states = {}
+        for tol_track in tolerance_tracks:
+            tol_states[t.name] = tol_track.history[edge_va]]
+
+        # make a time-ordered list of events plus a sentinel
+        tracks = [primary_track] + tolerance_tracks
+        events = [ev for t in tracks for ev in t.events[edge]]
+        sentinel = (self._node_to_tm[edge_vb], None)
+        seq = sorted((ev.tm, ev) for ev in events) + [sentinel]
+
+        # for each interval, add dwell time contributions
+        for tm_next, ev in seq:
+
+            # compute the amount of time spent in this segment
+            elapsed = tm_next - tm
+
+            # compute the dwell time summaries
+            self._on_primary_dwell(edge, elapsed, pri_state, tol_states)
+            self._on_tolerance_dwell(edge, elapsed, pri_state, tol_states)
+
+            # update the state and time
+            if ev is not None:
+                tm = tm_next
+                track = ev.track
+                if track is primary_track:
+                    pri_state = ev.sb
+                else:
+                    tol_states[track.name] = ev.sb
+
+    def _on_primary_dwell(self, edge, elapsed, pri_state, tol_states):
+        # add elapsed time to all available primary state transitions
+        G = self.edge_to_pri_dwell[edge]
+        for pri_state_b in self._Q_primary[pri_state]:
+            tol_class_b = self._primary_to_tol[pri_state_b]
+            if tol_states[tol_class_b]:
+                trans = (pri_state, pri_state_b)
+                if G.has_edge(*trans):
+                    G[*trans]['weight'] += elapsed
+                else:
+                    G.add_edge(*trans, weight=elapsed)
+
+    def _on_tolerance_dwell(self, edge, elapsed, pri_state, tol_states):
+        # add elapsed time to all available tolerance state transitions
+        primary_tol_class = self._primary_to_tol[pri_state]
+        for tol_name, tol_state in tol_states.items():
+            if tol_name != primary_tol_class:
+                if tol_state:
+                    self.edge_to_xon_off_dwell[edge] += elapsed
+                else:
+                    self.edge_to_off_xon_dwell[edge] += elapsed
 
 
+# TODO a bit obsolete
 def get_ell_init_contrib(
         root,
         primary_distn, blink_distn,
@@ -117,6 +221,7 @@ def get_ell_init_contrib(
     return ll_init
 
 
+# TODO a bit obsolete
 def get_ell_dwell_contrib(
         T, root, node_to_tm, edge_to_rate,
         Q_primary, Q_blink, Q_meta,
@@ -172,6 +277,7 @@ def get_ell_dwell_contrib(
     return edge_to_contrib
 
 
+# TODO a bit obsolete
 def get_ell_trans_contrib(
         T, root, edge_to_rate,
         Q_primary, Q_blink,
@@ -202,6 +308,7 @@ def get_ell_trans_contrib(
     return edge_to_contrib
 
 
+# TODO a bit obsolete
 class BlinkSummary(object):
     """
     Summary history relevant for blinking rate estimation.
