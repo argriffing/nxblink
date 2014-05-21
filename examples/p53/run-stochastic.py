@@ -65,6 +65,10 @@ def main(args):
     edge_to_rate = edge_to_blen
     edge_to_blen = dict((edge, 1) for edge in edge_to_rate)
 
+    # TODO for debugging
+    for edge in tree.edges():
+        edge_to_rate[edge] = 0.1
+
     # get a map from node to time from the root.
     node_to_tm = get_node_to_tm(tree, root, edge_to_blen)
 
@@ -149,6 +153,20 @@ def main(args):
     # Outer EM loop.
     for em_iteration in itertools.count(1):
 
+        # report the current parameter estimates
+        print('current parameter estimates:')
+        print('kappa:', kappa)
+        print('omega:', omega)
+        print('P(A):', A)
+        print('P(C):', C)
+        print('P(G):', G)
+        print('P(T):', T)
+        print('rate_on:', rate_on)
+        print('rate_off:', rate_off)
+        print('edge-specific rate estimates:')
+        for edge, rate in edge_to_rate.items():
+            print(edge, ':', rate)
+
         # Initialize the summary for the expectation step
         # of the current EM iteration.
         summary = Summary(tree, root, node_to_tm, primary_to_tol, Q_primary)
@@ -189,19 +207,6 @@ def main(args):
         params = p53em.maximization_step(summary, genetic_code,
                 kappa, omega, A, C, G, T, rate_on, rate_off, edge_to_rate)
         kappa, omega, A, C, G, T, rate_on, rate_off, edge_to_rate = params
-
-        # report the new parameter estimates
-        print('kappa:', kappa)
-        print('omega:', kappa)
-        print('P(A):', A)
-        print('P(C):', C)
-        print('P(G):', G)
-        print('P(T):', T)
-        print('rate_on:', rate_on)
-        print('blink_off:', blink_off)
-        print('edge-specific rate estimates:')
-        for edge, rate in edge_to_rate.items():
-            print(edge, ':', rate)
 
         # Estimate new blinking rates.
         #rate_on, rate_off =  get_blink_rate_mle(

@@ -24,6 +24,10 @@ The maximization step can be done using the trust-ncg method
 of the scipy.optimize minimization with gradient and hessian
 provided with automatic differentiation through algopy.
 
+If the sample average approximation of expectation finds an edge
+with no sampled event, then set the edge-specific rate to zero
+rather than trying to estimate it numerically in the maximization step.
+
 """
 from __future__ import division, print_function, absolute_import
 
@@ -51,7 +55,7 @@ def eval_hess(f, theta):
 
 
 def hamming_distance(a, b):
-    return sum(1 for x, y in zip(a, b))
+    return sum(1 for x, y in zip(a, b) if x != y)
 
 
 def objective(summary, edges, genetic_code, log_params):
@@ -191,7 +195,8 @@ def maximization_step(summary, genetic_code,
     h = partial(eval_hess, f)
 
     # maximize the log likelihood
-    result = minimize(f, x0, method='trust-ncg', jac=g, hess=h)
+    #result = minimize(f, x0, method='trust-ncg', jac=g, hess=h)
+    result = minimize(f, x0, method='L-BFGS-B', jac=g)
 
     # unpack the parameters
     unpacked, penalty = unpack_params(result.x)
@@ -205,7 +210,7 @@ def maximization_step(summary, genetic_code,
     edge_to_rate = dict(zip(edges, edge_rates))
 
     # return the parameter estimates
-    return kappa, omega, A, C, G, T, blink_on, blink_off, edge_rates
+    return kappa, omega, A, C, G, T, blink_on, blink_off, edge_to_rate
 
 
 def pack_params(kappa, omega, A, C, G, T, blink_on, blink_off, edge_rates):
