@@ -185,6 +185,24 @@ def main(args):
                 #blink_summary.on_sample(tree, root, node_to_tm, edge_to_rate,
                         #primary_track, tolerance_tracks, primary_to_tol)
 
+        # use the summary to estimate parameters
+        params = p53em.maximization_step(summary, genetic_code,
+                kappa, omega, A, C, G, T, blink_on, blink_off, edge_to_rate)
+        kappa, omega, A, C, G, T, blink_on, blink_off, edge_to_rate = params
+
+        # report the new parameter estimates
+        print('kappa:', kappa)
+        print('omega:', kappa)
+        print('P(A):', A)
+        print('P(C):', C)
+        print('P(G):', G)
+        print('P(T):', T)
+        print('blink_on:', blink_on)
+        print('blink_off:', blink_off)
+        print('edge-specific rate estimates:')
+        for edge, rate in edge_to_rate.items():
+            print(edge, ':', rate)
+
         # Estimate new blinking rates.
         #rate_on, rate_off =  get_blink_rate_mle(
                 #blink_summary.xon_root_count,
