@@ -24,8 +24,8 @@ def test_gen_segments():
     track_b = LightTrajectory('tb', {va:'x', vb:'x'})
     track_c = LightTrajectory('tc', {va:'a', vb:'c'})
     track_a.events = {edge : [
-        Event(track_a, 5.5, 1, 3),
         Event(track_a, 7, 3, 2),
+        Event(track_a, 5.5, 1, 3),
         Event(track_a, 9, 2, 4)]}
     track_b.events = {edge : []}
     track_c.events = {edge : [
