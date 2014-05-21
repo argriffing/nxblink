@@ -14,7 +14,41 @@ from .util import (
         get_uniformized_P_nx, get_identity_P_nx)
 
 
-class Trajectory(object):
+class LightTrajectory(object):
+    """
+    This base class is used by itself for testing.
+
+    """
+    def __init__(self, name=None, history=None, events=None):
+        self.name = name
+        self.history = history
+        self.events = events
+
+    def remove_self_transitions(self):
+        edges = set(self.events)
+        for edge in edges:
+            events = self.events[edge]
+            self.events[edge] = [ev for ev in events if ev.sb != ev.sa]
+
+    def clear_state_labels(self):
+        """
+        Clear the state labels but not the event times.
+
+        """
+        nodes = set(self.history)
+        edges = set(self.events)
+        for v in nodes:
+            self.history[v] = None
+        for edge in edges:
+            for ev in self.events[edge]:
+                ev.sa = None
+                ev.sb = None
+
+    def __str__(self):
+        return 'Track(%s)' % self.name
+
+
+class Trajectory(LightTrajectory):
     """
     Aggregate data and functions related to a single trajectory.
 
@@ -63,28 +97,6 @@ class Trajectory(object):
         # Precompute the identity transition matrix.
         self.P_nx_identity = get_identity_P_nx(set(Q_nx))
 
-    def remove_self_transitions(self):
-        edges = set(self.events)
-        for edge in edges:
-            events = self.events[edge]
-            self.events[edge] = [ev for ev in events if ev.sb != ev.sa]
-
-    def clear_state_labels(self):
-        """
-        Clear the state labels but not the event times.
-
-        """
-        nodes = set(self.history)
-        edges = set(self.events)
-        for v in nodes:
-            self.history[v] = None
-        for edge in edges:
-            for ev in self.events[edge]:
-                ev.sa = None
-                ev.sb = None
-
-    def __str__(self):
-        return 'Track(%s)' % self.name
 
 
 class Event(object):
