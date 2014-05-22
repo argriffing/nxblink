@@ -203,6 +203,10 @@ def main(args):
                 #blink_summary.on_sample(tree, root, node_to_tm, edge_to_rate,
                         #primary_track, tolerance_tracks, primary_to_tol)
 
+        # print the summary
+        print('expectation step summary:')
+        print(summary)
+
         # use the summary to estimate parameters
         params = p53em.maximization_step(summary, genetic_code,
                 kappa, omega, A, C, G, T, rate_on, rate_off, edge_to_rate)

@@ -27,6 +27,7 @@ from __future__ import division, print_function, absolute_import
 
 import math
 from collections import defaultdict
+from StringIO import StringIO
 
 import networkx as nx
 
@@ -108,6 +109,8 @@ class Summary(object):
         """
 
         """
+        self.nsamples += 1
+
         # add the root counts
         self._on_sample_root(primary_track, tolerance_tracks)
 
@@ -178,6 +181,57 @@ class Summary(object):
                     self.edge_to_xon_off_dwell[edge] += elapsed
                 else:
                     self.edge_to_off_xon_dwell[edge] += elapsed
+
+    def __str__(self):
+        s = StringIO()
+        print('nsamples:', self.nsamples, file=s)
+
+        # root summary
+        print('root summary:', file=s)
+        print('  unforced blinked-on count:', self.root_xon_count, file=s)
+        print('  blinked-off count:', self.root_off_count, file=s)
+        print('  nonzero primary state counts:', file=s)
+        for pri_state, count in sorted(self.root_pri_to_count.items()):
+            print('    ', pri_state, ':', count, file=s)
+
+        # per-edge summary
+        print('edge-specific summaries:', file=s)
+        for edge in self._T.edges():
+
+            print('edge', edge, ':', file=s)
+
+            # extract edge summaries for transitions
+            pri_trans = self.edge_to_pri_trans[edge]
+            off_xon_trans = self.edge_to_off_xon_trans[edge]
+            xon_off_trans = self.edge_to_xon_off_trans[edge]
+
+            # extract edge summaries for dwell times
+            pri_dwell = self.edge_to_pri_dwell[edge]
+            off_xon_dwell = self.edge_to_off_xon_dwell[edge]
+            xon_off_dwell = self.edge_to_xon_off_dwell[edge]
+
+            # transition summary
+            print('  blink state transition counts:', file=s)
+            print('    off -> on :', off_xon_trans, file=s)
+            print('    unforced on -> off :', xon_off_trans, file=s)
+            print('  primary state transition counts:', file=s)
+            for sa in sorted(pri_trans):
+                for sb in sorted(pri_trans[sa]):
+                    count = pri_trans[sa][sb]['weight']
+                    print('    ', sa, '->', sb, ':', count, file=s)
+
+            # dwell summary
+            print('  blink state dwell summary:', file=s)
+            print('    off -> on :', off_xon_dwell, file=s)
+            print('    unforced on -> off :', xon_off_dwell, file=s)
+            print('  primary state dwell summary:', file=s)
+            for sa in sorted(pri_dwell):
+                for sb in sorted(pri_dwell[sa]):
+                    dwell = pri_dwell[sa][sb]['weight']
+                    print('    ', sa, '->', sb, ':', dwell, file=s)
+
+        # return the string
+        return s.getvalue()
 
 
 # TODO a bit obsolete
