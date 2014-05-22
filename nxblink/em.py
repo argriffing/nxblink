@@ -16,7 +16,8 @@ def get_expected_rate(pre_Q, distn):
     return algopy.dot(pre_Q.sum(axis=1), distn)
 
 
-def get_ll_dwell(summary, pre_Q, distn, blink_on, blink_off):
+def get_ll_dwell(summary, pre_Q, distn, blink_on, blink_off,
+        edges, edge_rates):
     """
     Get dwell-related contribution to log likelihood.
 
@@ -75,10 +76,11 @@ def get_ll_dwell(summary, pre_Q, distn, blink_on, blink_off):
         ll = ll - ll_dwell * (edge_rate / expected_rate)
 
     # return expected log likelihood contribution of dwell
-    return ll
+    return ll / summary.nsamples
 
 
-def get_ll_trans(summary, pre_Q, distn, blink_on, blink_off):
+def get_ll_trans(summary, pre_Q, distn, blink_on, blink_off,
+        edges, edge_rates):
     """
 
     Parameters
@@ -126,7 +128,7 @@ def get_ll_trans(summary, pre_Q, distn, blink_on, blink_off):
                 count = pri_trans[sa][sb]['weight']
                 transition_count_sum += count
                 if count:
-                    ell = ell + count * log(pre_Q[sa, sb])
+                    ll = ll + count * log(pre_Q[sa, sb])
 
         # contribution of blink transition summary to expected log likelihood
         if off_xon_trans:
@@ -141,10 +143,10 @@ def get_ll_trans(summary, pre_Q, distn, blink_on, blink_off):
             ll = ll + transition_count_sum * log(edge_rate / expected_rate)
 
     # return negative expected log likelihood contribution due to transitions
-    return ll
+    return ll / summary.nsamples
 
 
-def get_ll_root(summary, pre_Q, distn, blink_on, blink_off):
+def get_ll_root(summary, distn, blink_on, blink_off):
     """
 
     Parameters
@@ -185,4 +187,4 @@ def get_ll_root(summary, pre_Q, distn, blink_on, blink_off):
         ll = ll + summary.root_xon_count * log(blink_distn[1])
 
     # return expected log likelihood contribution of root
-    return ll
+    return ll / summary.nsamples

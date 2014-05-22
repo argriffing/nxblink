@@ -55,6 +55,7 @@ from nxblink.raoteh import (
 from nxblink.toymodel import BlinkModelA, BlinkModelB, BlinkModelC
 from nxblink.toydata import DataA, DataB, DataC, DataD
 from nxblink.summary import Summary
+from nxblink.em import get_ll_root, get_ll_dwell, get_ll_trans
 
 
 def get_blink_dwell_times(T, node_to_tm, blink_tracks):
@@ -247,6 +248,32 @@ def run(model, data, nburnin, nsamples):
     print('comprehensive summary:')
     print(summary)
     print()
+
+    # compute some dense functions related to the rate matrix
+    nprimary = len(Q_primary)
+    pre_Q_dense = np.zeros((nprimary, nprimary), dtype=float)
+    for sa in Q_primary:
+        for sb in Q_primary[sa]:
+            rate = Q_primary[sa][sb]['weight']
+            pre_Q_dense[sa, sb] = rate
+    distn_dense = np.zeros(nprimary, dtype=float)
+    for state, p in primary_distn.items():
+        distn_dense[state] = p
+    edges, edge_rates = zip(*edge_to_rate.items())
+
+    # functions of summaries for computing log likelihood
+    rate_on = Q_blink[0][1]['weight']
+    rate_off = Q_blink[1][0]['weight']
+    ll_root = get_ll_root(summary, distn_dense, rate_on, rate_off)
+    ll_dwell = get_ll_dwell(summary,
+            pre_Q_dense, distn_dense, rate_on, rate_off, edges, edge_rates)
+    ll_trans = get_ll_trans(summary,
+            pre_Q_dense, distn_dense, rate_on, rate_off, edges, edge_rates)
+
+    print('log likelihood contributions calculated from comprehensive summary:')
+    print('root ll contrib:', ll_root)
+    print('dwell ll contrib:', ll_dwell)
+    print('trans ll contrib:', ll_trans)
 
 
 def main(args):
