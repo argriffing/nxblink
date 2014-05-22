@@ -6,9 +6,14 @@ Most of the expectation step is in the nxblink.summary module.
 """
 from __future__ import division, print_function, absolute_import
 
-import networkx as nx
 import algopy
-from algopy import exp, log
+from algopy import log
+
+__all__ = ['get_ll_dwell', 'get_ll_trans', 'get_ll_root', 'get_expected_rate']
+
+
+def get_expected_rate(pre_Q, distn):
+    return algopy.dot(pre_Q.sum(axis=1), distn)
 
 
 def get_ll_dwell(summary, pre_Q, distn, blink_on, blink_off):
