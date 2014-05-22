@@ -24,6 +24,9 @@ The process is separated into multiple 'tracks' -- a primary process
 track and one track for each of the tolerance processes.
 The track trajectories are not independent of each other.
 
+Begin a work-in-progress to use the nxblink.summary module
+instead of the less comprehensive example-specific summary code.
+
 """
 from __future__ import division, print_function, absolute_import
 
@@ -51,7 +54,7 @@ from nxblink.raoteh import (
         update_track_data_for_zero_blen)
 from nxblink.toymodel import BlinkModelA, BlinkModelB, BlinkModelC
 from nxblink.toydata import DataA, DataB, DataC, DataD
-
+from nxblink.summary import Summary
 
 
 def get_blink_dwell_times(T, node_to_tm, blink_tracks):
@@ -114,9 +117,17 @@ def run(model, data, nburnin, nsamples):
     total_dwell_off = 0
     total_dwell_on = 0
     blink_summary = BlinkSummary()
+
+    # initialize a summary
+    summary = Summary(T, root, node_to_tm, primary_to_tol, Q_primary)
+
+    #
     for pri_track, tol_tracks in gen_samples(model, data, nburnin, nsamples):
 
-        # Compute a summary.
+        # Compute a summary using the more comprehensive code.
+        summary.on_sample(pri_track, tol_tracks)
+
+        # Compute a summary using the ad hoc code.
         blink_summary.on_sample(T, root, node_to_tm, edge_to_rate,
                 pri_track, tol_tracks, primary_to_tol)
 
@@ -231,6 +242,10 @@ def run(model, data, nburnin, nsamples):
             )
     print('ml rate on:', ml_rate_on)
     print('ml rate off:', ml_rate_off)
+    print()
+
+    print('comprehensive summary:')
+    print(summary)
     print()
 
 
