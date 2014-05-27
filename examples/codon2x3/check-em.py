@@ -10,12 +10,16 @@ import itertools
 import argparse
 
 import algopy
+import numpy as np
 
 import nxblink
 from nxblink.toymodel import BlinkModelA, BlinkModelB, BlinkModelC
 from nxblink.toydata import DataA, DataB, DataC, DataD
 from nxblink.summary import Summary
 from nxblink.em import get_ll_root, get_ll_dwell, get_ll_trans
+from nxblink.model import get_Q_meta
+from nxblink.util import get_node_to_tm
+from nxblink.raoteh import gen_samples
 
 from algopy_boilerplate import eval_grad, eval_hess
 
@@ -24,6 +28,10 @@ from algopy_boilerplate import eval_grad, eval_hess
 # 1) max marginal likelihood
 # 2) EM using exact expectation and maximization steps
 # 3) EM using sample average approximation of expectation
+
+#TODO modify the model classes to allow parameter values to be updated
+
+#TODO modify the model classes to sample data, for example data objects
 
 
 def maximization_step(summary, pre_Q, primary_distn,
@@ -154,8 +162,7 @@ def run(model, data, nburnin, nsamples):
     # The point is to recover the actual values starting with these ones.
     rate_on = 0.4
     rate_off = 1.4
-    for edge in edges:
-        edge_rates[edge] = 0.1
+    edge_rates = [0.1 for edge in edges]
 
     # Sample many data points.
     # Each data point consists of an incomplete observation of
@@ -174,9 +181,12 @@ def run(model, data, nburnin, nsamples):
         print('beginning EM iteration', em_iteration)
         print('with parameter values')
         print('blink rate on:', rate_on)
+        print('blink rate off:', rate_off)
+        print('edge rates:')
+        print(zip(edges, edge_rates))
+        print()
 
-        # Compute statistics of many sampled trajectories
-        # without conditioning on any data.
+        # Compute statistics of many sampled trajectories.
         summary = Summary(T, root, node_to_tm, primary_to_tol, Q_primary)
         for track_info in gen_samples(model, data, nburnin, nsamples):
             pri_track, tol_tracks = track_info
