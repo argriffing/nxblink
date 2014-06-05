@@ -118,9 +118,14 @@ def get_primary_to_tol():
     return primary_to_part
 
 
-def get_tree_info():
+def get_tree_info(root_at_human_leaf=False):
     ret = _get_jeff_params_e()
     kappa, omega, A, C, T, G, rho, tree, root, leaf_name_pairs = ret
+    if root_at_human_leaf:
+        all_nodes = set(tree)
+        name_to_leaf = dict((v, k) for k, v in leaf_name_pairs)
+        human_leaf = name_to_leaf['Has']
+        root = human_leaf
     tree, root, edge_to_blen = _tree_helper(tree, root)
     name_to_leaf = dict((name, leaf) for leaf, name in leaf_name_pairs)
     return tree, root, edge_to_blen, name_to_leaf
@@ -166,6 +171,9 @@ class Model(object):
         self._Q = Q
         self._primary_distn = primary_distn
         self._primary_to_part = primary_to_part
+
+        # this map is used internally
+        self._residue_to_part = residue_to_part
 
     def get_rate_on(self):
         return self._rate_on

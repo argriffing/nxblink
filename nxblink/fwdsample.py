@@ -6,7 +6,12 @@ The samples are conditional on the initial state at the root.
 """
 from __future__ import division, print_function, absolute_import
 
+import networkx as nx
+import numpy as np
+
 from .trajectory import LightTrajectory, Event
+from .model import get_Q_blink, get_interaction_map
+from .util import get_node_to_tm
 
 
 def gen_potential_transitions(
@@ -122,6 +127,7 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
 
     # Define the primary rate matrix.
     Q_primary = model.get_Q_primary()
+    primary_distn = model.get_primary_distn()
 
     # Normalize the primary rate matrix to have expected rate 1.
     expected_primary_rate = 0
@@ -138,20 +144,22 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
     Q_blink = get_Q_blink(rate_on=rate_on, rate_off=rate_off)
 
     # Generate forward samples.
-    for track_to_root_state in seq_of_track_to_root_states:
+    for track_to_root_state in seq_of_track_to_root_state:
 
         # Initialize primary trajectory.
+        primary_name = 'PRIMARY'
+        root_pri_state = track_to_root_state[primary_name]
         pri_track = LightTrajectory(
-                name='PRIMARY',
+                name=primary_name,
                 history={root : root_pri_state},
                 events=dict())
 
         # Initialize tolerance process trajectories.
         tol_tracks = []
-        for name in tolerance_names:
-            track = Trajectory(
+        for name in tol_names:
+            track = LightTrajectory(
                     name=name,
-                    history={root : root_tol_to_state[name]},
+                    history={root : track_to_root_state[name]},
                     events=dict())
             tol_tracks.append(track)
 
@@ -164,6 +172,10 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
 
             # Unpack the edge.
             na, nb = edge
+
+            # Get the edge rate.
+            # The edge length is already accounted for using node times.
+            edge_rate = edge_to_rate[edge]
 
             # Get the time and states at the head of the edge.
             tm = node_to_tm[na]
@@ -178,17 +190,22 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
             while True:
 
                 # Collect all allowed transitions and their rates.
+                # The edge rate can be ignored in this step,
+                # because the edge rate affects all rates proportionally.
                 pot = list(gen_potential_transitions(
                     track_to_state, pri_track.name,
                     primary_to_tol, Q_primary, Q_blink))
                 
                 # Get the total rate out of the current state.
                 # This includes primary and tolerance process rates.
-                rate = sum(r for t, r in pot)
+                # Note that the edge rate must be considered in this step,
+                # if this rate is to be used directly
+                # for sampling the wait time.
+                rate = edge_rate * sum(r for t, r in pot)
 
                 # Sample a wait time.
                 # The wait time will be small if the rate is large.
-                scale = 1/rate
+                scale = 1 / rate
                 wait_time = np.random.exponential(scale)
                 tm_ev = tm + wait_time
 

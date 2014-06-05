@@ -11,6 +11,7 @@ from __future__ import division, print_function, absolute_import
 from StringIO import StringIO
 from collections import defaultdict
 import itertools
+from itertools import izip_longest
 import functools
 import argparse
 import sys
@@ -20,6 +21,9 @@ import numpy as np
 
 import create_mg94
 import app_helper
+
+import nxmctree
+from nxmctree.sampling import dict_random_choice
 
 import nxblink
 from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
@@ -31,6 +35,7 @@ from nxblink.summary import (BlinkSummary, Summary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         init_tracks, gen_samples, update_track_data_for_zero_blen)
+from nxblink.fwdsample import gen_forward_samples
 
 import p53model
 import p53data
@@ -42,45 +47,82 @@ LETHAL = 'LETHAL'
 UNKNOWN = 'UNKNOWN'
 
 
+# official python itertools recipe
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    args = [iter(iterable)] * n
+    return izip_longest(fillvalue=fillvalue, *args)
+
+
+def prob_arg(s):
+    p = float(s)
+    if p < 0:
+        raise ValueError('expected a non-negative probability')
+    if p > 1:
+        raise ValueError('expected a probability less than or equal to 1')
+    return p
+
+
+def rate_arg(s):
+    r = float(s)
+    if r < 0:
+        raise ValueError('expected a non-negative rate')
+    return r
+
+
+def rate_ratio_arg(s):
+    ratio = float(s)
+    if ratio < 0:
+        raise ValueError('expected a non-negative rate ratio')
+    return ratio
+
+
+def sample_primary_state(primary_distn, primary_to_tol, track_to_state):
+    """
+    Sample a primary state conditional on the disease data.
+
+    """
+    primary_weights = {}
+    for primary_state, tol_class in primary_to_tol.items():
+        if track_to_state[tol_class]:
+            primary_weights[primary_state] = primary_distn[primary_state]
+    return dict_random_choice(primary_weights)
+
+
 def main(args):
     """
 
     """
+    # Unpack some arguments.
+    kappa = args.kappa
+    omega = 1.0
+    pA = args.pA
+    pC = args.pC
+    pG = args.pG
+    pT = args.pT
+    nt_distn = np.array([pA, pC, pG, pT])
+    if not np.allclose(nt_distn.sum(), 1):
+        raise ValueError('expected nt freqs to sum to 1')
+    rate_on = args.rate_on
+    rate_off = args.rate_off
+
     # Specify the model.
     # Define the rate matrix for a single blinking trajectory,
     # and the prior blink state distribution.
 
     # Specify the tree shape, the root,
     # the branch lengths, and the map from leaf name to leaf node.
-    tree, root, edge_to_blen, name_to_leaf = p53model.get_tree_info()
-    all_nodes = set(tree)
-    human_leaf = name_to_leaf['Has']
-    #print('tree type:', type(tree))
-    #print('tree edges:', tree.edges())
-    for edge in tree.edges():
-        if edge not in edge_to_blen:
-            raise Exception(edge)
+    # Root the tree at the human leaf.
+    tree, root, edge_to_blen, name_to_leaf = p53model.get_tree_info(
+            root_at_human_leaf=True)
 
     # Flip edge_to_blen and edge_to_rate.
     edge_to_rate = edge_to_blen
     edge_to_blen = dict((edge, 1) for edge in edge_to_rate)
 
-    # TODO for debugging
-    for edge in tree.edges():
-        edge_to_rate[edge] = 0.1
-
     # get a map from node to time from the root.
     node_to_tm = get_node_to_tm(tree, root, edge_to_blen)
-
-    # Define the number of burn-in iterations
-    # and the number of subsequent samples.
-    nburnin = args.k
-    nsamples = args.k * args.k
-
-    # Report a tree summary.
-    print('root:', root)
-    print('sum of branch lengths:', sum(edge_to_blen.values()))
-    print()
 
     # Read the alignment.
     print('reading the alignment...')
@@ -119,6 +161,7 @@ def main(args):
         selected_codon_columns = codon_columns
     else:
         selected_codon_columns = codon_columns[:args.ncols]
+    ncols = len(codon_columns)
 
     # Re-read the genetic code to pass to the per-column analysis.
     with open('universal.code.txt') as fin:
@@ -128,107 +171,65 @@ def main(args):
     codon_to_state = dict((c, s) for s, r, c in genetic_code)
 
     # initialize the model
-    rate_on = 1.5
-    rate_off = 0.5
-    param_info = p53model._get_jeff_params_e()
-    kappa, omega, A, C, T, G, rho, d_tree, d_root, leaf_name_pairs = param_info
-    #print('tree edges:', tree.edges())
     model = p53model.Model(
-            kappa, omega, A, C, G, T,
+            kappa, omega, pA, pC, pG, pT,
             rate_on, rate_off,
             tree, root,
             edge_to_blen, edge_to_rate,
             )
-
-    # extract some summaries from the model
-    primary_to_tol = model.get_primary_to_tol()
-    Q_primary = model.get_Q_primary()
+    
+    # from the model, extract the primary state distribution
+    # and the primary to tol map for the purpose of sampling
+    # primary states at the root node
+    # conditional on the disease states at the root node.
     primary_distn = model.get_primary_distn()
-    Q_meta = get_Q_meta(Q_primary, primary_to_tol)
+    primary_to_tol = model.get_primary_to_tol()
 
-    # This is a reformulation of the interactions between the primary
-    # process track and the tolerance process tracks.
-    interaction_map = get_interaction_map(primary_to_tol)
+    # Define the sequence of states at the human node.
+    # Each element of the sequence corresponds to a site (column)
+    # of a codon alignment.
+    # The tolerance states are taken from the human disease data.
+    # The codon states are sampled conditional on the tolerance states.
+    root_info_seq = []
+    for site_index in range(ncols):
+        pos = site_index + 1
+        benign_residues = pos_to_benign_residues.get(pos, set())
+        lethal_residues = pos_to_lethal_residues.get(pos, set())
+        track_to_state = dict()
+        for residue in benign_residues:
+            tol_class = model._residue_to_part[residue]
+            track_to_state[tol_class] = 1
+        for residue in lethal_residues:
+            tol_class = model._residue_to_part[residue]
+            track_to_state[tol_class] = 0
+        primary_state = sample_primary_state(
+                primary_distn, primary_to_tol, track_to_state)
+        track_to_state['PRIMARY'] = primary_state
+        root_info_seq.append(track_to_state)
 
-    # Outer EM loop.
-    for em_iteration in itertools.count(1):
+    # sample alignment columns
+    leaf_names = list(name_to_leaf)
+    name_to_codon_state_seq = dict((n, []) for n in leaf_names)
+    for info in gen_forward_samples(model, root_info_seq):
+        pri_track, tol_tracks = info
+        for leaf_name, node in name_to_leaf.items():
+            pri_state = pri_track.history[node]
+            name_to_codon_state_seq[leaf_name].append(pri_state)
 
-        # report the current parameter estimates
-        print('current parameter estimates:')
-        print('kappa:', kappa)
-        print('omega:', omega)
-        print('P(A):', A)
-        print('P(C):', C)
-        print('P(G):', G)
-        print('P(T):', T)
-        print('rate_on:', rate_on)
-        print('rate_off:', rate_off)
-        print('edge-specific rate estimates:')
-        for edge, rate in edge_to_rate.items():
-            print(edge, ':', rate)
-
-        # Initialize the summary for the expectation step
-        # of the current EM iteration.
-        summary = Summary(tree, root, node_to_tm, primary_to_tol, Q_primary)
-
-        # Summaries of blinking states.
-        #Q_blink = model.get_Q_blink()
-        #blink_distn = model.get_blink_distn()
-
-        # Summarize some codon column histories.
-        #blink_summary = BlinkSummary()
-        for i, codon_column in enumerate(selected_codon_columns):
-            pos = i + 1
-            benign_residues = pos_to_benign_residues.get(pos, set())
-            lethal_residues = pos_to_lethal_residues.get(pos, set())
-
-            # Define the data object corresponding to this column.
-            data = p53data.Data(
-                    genetic_code, benign_residues, lethal_residues,
-                    all_nodes, names, name_to_leaf, human_leaf,
-                    primary_to_tol, codon_to_state,
-                    codon_column,
-                    )
-
-            #print('edge_to_blen:', edge_to_blen)
-            for track_info in gen_samples(model, data, nburnin, nsamples):
-
-                # Unpack the tracks.
-                primary_track, tolerance_tracks = track_info
-
-                # Summarize the sampled trajectories.
-                summary.on_sample(primary_track, tolerance_tracks)
-
-                # Summarize the trajectories with respect to blink parameters.
-                #blink_summary.on_sample(tree, root, node_to_tm, edge_to_rate,
-                        #primary_track, tolerance_tracks, primary_to_tol)
-
-        # print the summary
-        print('expectation step summary:')
-        print(summary)
-
-        # use the summary to estimate parameters
-        params = p53em.maximization_step(summary, genetic_code,
-                kappa, omega, A, C, G, T, rate_on, rate_off, edge_to_rate)
-        kappa, omega, A, C, G, T, rate_on, rate_off, edge_to_rate = params
-
-        # Estimate new blinking rates.
-        #rate_on, rate_off =  get_blink_rate_mle(
-                #blink_summary.xon_root_count,
-                #blink_summary.off_root_count,
-                #blink_summary.off_xon_count,
-                #blink_summary.xon_off_count,
-                #blink_summary.off_xon_dwell,
-                #blink_summary.xon_off_dwell,
-                #)
-        #print('xon_root_count:', blink_summary.xon_root_count)
-        #print('off_root_count:', blink_summary.off_root_count)
-        #print('off_xon_count:', blink_summary.off_xon_count)
-        #print('xon_off_count:', blink_summary.xon_off_count)
-        #print('off_xon_dwell:', blink_summary.off_xon_dwell)
-        #print('xon_off_dwell:', blink_summary.xon_off_dwell)
-        #print('finished EM iteration', em_iteration)
-        #sys.stdout.flush()
+    # write the alignment in the same format as Jeff's testseq file.
+    nleaves = len(leaf_names)
+    state_to_codon = ((v, k) for k, v in codon_to_state.items())
+    codons_per_line = 20
+    with open(args.align_out, 'w') as fout:
+        print(nleaves, ncols, file=fout)
+        print(file=fout)
+        for name, codon_states in name_to_codon_state_seq.items():
+            print(name, file=fout)
+            for states in grouper(codon_states, codons_per_line):
+                codons = [state_to_codon[s] for s in states]
+                s = ' '.join(codons)
+                print(s, file=fout)
+            print(file=fout)
 
 
 if __name__ == '__main__':
@@ -238,7 +239,23 @@ if __name__ == '__main__':
             help='limit the number of summarized columns')
     parser.add_argument('--disease', required=True,
             help='csv file with filtered disease data')
-    parser.add_argument('--k', type=int, default=10,
-            help='square root of number of samples')
+    parser.add_argument('--align-out', required=True,
+            help='output alignment file')
+    parser.add_argument('--kappa', required=True, type=rate_ratio_arg,
+            help='mutational nucleotide transition/transversion ratio')
+    parser.add_argument('--pA', required=True, type=prob_arg,
+            help='mutational nucleotide equilibrium frequency of adenine')
+    parser.add_argument('--pC', required=True, type=prob_arg,
+            help='mutational nucleotide equilibrium frequency of cytosine')
+    parser.add_argument('--pG', required=True, type=prob_arg,
+            help='mutational nucleotide equilibrium frequency of guanine')
+    parser.add_argument('--pT', required=True, type=prob_arg,
+            help='mutational nucleotide equilibrium frequency of thymine')
+    parser.add_argument('--rate-on', required=True, type=rate_arg,
+            help='rate of amino acid tolerance gain')
+    parser.add_argument('--rate-off', required=True, type=rate_arg,
+            help='rate of amino acid tolerance loss')
+
+
     main(parser.parse_args())
 
