@@ -147,7 +147,7 @@ def main(args):
         selected_codon_columns = codon_columns
     else:
         selected_codon_columns = codon_columns[:args.ncols]
-    ncols = len(codon_columns)
+    ncols = len(selected_codon_columns)
 
     # Re-read the genetic code to pass to the per-column analysis.
     with open('universal.code.txt') as fin:
@@ -196,7 +196,8 @@ def main(args):
     # sample alignment columns
     leaf_names = list(name_to_leaf)
     name_to_codon_state_seq = dict((n, []) for n in leaf_names)
-    for info in gen_forward_samples(model, root_info_seq):
+    for i, info in enumerate(gen_forward_samples(model, root_info_seq)):
+        print('sampling site', i+1, '...')
         pri_track, tol_tracks = info
         for leaf_name, node in name_to_leaf.items():
             pri_state = pri_track.history[node]
@@ -204,7 +205,7 @@ def main(args):
 
     # write the alignment in the same format as Jeff's testseq file.
     nleaves = len(leaf_names)
-    state_to_codon = ((v, k) for k, v in codon_to_state.items())
+    state_to_codon = dict((v, k) for k, v in codon_to_state.items())
     codons_per_line = 20
     with open(args.align_out, 'w') as fout:
         print(nleaves, ncols, file=fout)
@@ -212,7 +213,7 @@ def main(args):
         for name, codon_states in name_to_codon_state_seq.items():
             print(name, file=fout)
             for states in grouper(codon_states, codons_per_line):
-                codons = [state_to_codon[s] for s in states]
+                codons = [state_to_codon[s] for s in states if s is not None]
                 s = ' '.join(codons)
                 print(s, file=fout)
             print(file=fout)

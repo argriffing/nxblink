@@ -170,6 +170,10 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
         # Iterate over edges, from the root towards the leaves.
         for edge in nx.bfs_edges(T, root):
 
+            # For each track, initialize the event list for this edge.
+            for track in tracks:
+                track.events[edge] = []
+
             # Unpack the edge.
             na, nb = edge
 
@@ -205,9 +209,12 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
 
                 # Sample a wait time.
                 # The wait time will be small if the rate is large.
-                scale = 1 / rate
-                wait_time = np.random.exponential(scale)
-                tm_ev = tm + wait_time
+                if rate:
+                    scale = 1 / rate
+                    wait_time = np.random.exponential(scale)
+                    tm_ev = tm + wait_time
+                else:
+                    tm_ev = np.inf
 
                 # If the wait time puts the time of the transition
                 # past the tail endpoint of the edge,
@@ -237,6 +244,6 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
             for track in tracks:
                 track.history[nb] = track_to_state[track.name]
 
-    # Return the sampled trajectories.
-    return pri_track, tol_tracks
+        # Yield the sampled trajectories.
+        yield pri_track, tol_tracks
 
