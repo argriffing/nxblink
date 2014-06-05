@@ -18,6 +18,15 @@ class LightTrajectory(object):
     """
     This base class is used by itself for testing.
 
+    Parameters
+    ----------
+    name : hashable
+        name of the trajectory
+    history : dict
+        map from structural node to current state.
+    events : dict
+        map from structural edge to list of events on that edge
+
     """
     def __init__(self, name=None, history=None, events=None):
         self.name = name
