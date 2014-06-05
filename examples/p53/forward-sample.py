@@ -8,38 +8,24 @@ and the data (alignment data and disease data) is from a p53 database.
 """
 from __future__ import division, print_function, absolute_import
 
-from StringIO import StringIO
 from collections import defaultdict
 import itertools
 from itertools import izip_longest
-import functools
 import argparse
-import sys
 
 import networkx as nx
 import numpy as np
 
-import create_mg94
 import app_helper
 
 import nxmctree
 from nxmctree.sampling import dict_random_choice
 
 import nxblink
-from nxblink.model import get_Q_blink, get_Q_meta, get_interaction_map
 from nxblink.util import get_node_to_tm
-from nxblink.navigation import gen_segments
-from nxblink.maxlikelihood import get_blink_rate_mle
-from nxblink.trajectory import Trajectory
-from nxblink.summary import (BlinkSummary, Summary,
-        get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
-from nxblink.raoteh import (
-        init_tracks, gen_samples, update_track_data_for_zero_blen)
 from nxblink.fwdsample import gen_forward_samples
 
 import p53model
-import p53data
-import p53em
 
 
 BENIGN = 'BENIGN'
