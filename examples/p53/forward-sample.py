@@ -107,6 +107,15 @@ def main(args):
     edge_to_rate = edge_to_blen
     edge_to_blen = dict((edge, 1) for edge in edge_to_rate)
 
+    # Report some information about the tree.
+    edges = list(nx.bfs_edges(tree, root))
+    expectation = 0
+    for edge in edges:
+        expectation += edge_to_blen[edge] * edge_to_rate[edge]
+    print('number of branches:', len(edge_to_rate))
+    print('unconditional expected number of codon substitutions on the tree:',
+            expectation)
+
     # get a map from node to time from the root.
     node_to_tm = get_node_to_tm(tree, root, edge_to_blen)
 
@@ -197,7 +206,7 @@ def main(args):
     leaf_names = list(name_to_leaf)
     name_to_codon_state_seq = dict((n, []) for n in leaf_names)
     for i, info in enumerate(gen_forward_samples(model, root_info_seq)):
-        print('sampling site', i+1, '...')
+        print('accumulating samples from site', i+1, '...')
         pri_track, tol_tracks = info
         for leaf_name, node in name_to_leaf.items():
             pri_state = pri_track.history[node]
