@@ -172,8 +172,10 @@ class Model(object):
         self._primary_distn = primary_distn
         self._primary_to_part = primary_to_part
 
-        # this map is used internally
+        # store things to be used internally
         self._residue_to_part = residue_to_part
+        self._codon_to_state = dict((c, s) for s, r, c in genetic_code)
+        self._state_to_codon = dict((s, c) for s, r, c in genetic_code)
 
     def get_rate_on(self):
         return self._rate_on

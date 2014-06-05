@@ -11,7 +11,7 @@ import numpy as np
 
 from .trajectory import LightTrajectory, Event
 from .model import get_Q_blink, get_interaction_map
-from .util import get_node_to_tm
+from .util import get_node_to_tm, hamming_distance
 
 
 def gen_potential_transitions(
@@ -236,6 +236,12 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
                 # update the current time,
                 # and update the current state.
                 ev = Event(track, tm_ev, sa, sb)
+                if track is pri_track:
+                    codon_a = model._state_to_codon[sa]
+                    codon_b = model._state_to_codon[sb]
+                    print('sampled', codon_a, '->', codon_b,
+                            'with hamming distance',
+                            hamming_distance(codon_a, codon_b))
                 track.events[edge].append(ev)
                 tm = tm_ev
                 track_to_state[track_name] = sb
