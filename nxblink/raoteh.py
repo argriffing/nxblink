@@ -41,6 +41,7 @@ def gen_samples(model, data, nburnin, nsamples):
          * get_primary_distn
          * get_Q_primary
          * get_edge_to_blen
+         * get_edge_to_rate
     data : object
         A source of information about the data at nodes of the tree graph.
         This includes

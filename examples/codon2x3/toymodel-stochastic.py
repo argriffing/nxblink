@@ -301,6 +301,10 @@ if __name__ == '__main__':
                 'and assume all others benign)'))
     parser.add_argument('--k', type=int, default=80,
             help='square root of number of samples')
+    parser.add_argument('--out-specific',
+            help='model-specific output file')
+    parser.add_argument('--out-generic',
+            help='generic output file')
     args = parser.parse_args()
     main(args)
 
