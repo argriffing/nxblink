@@ -8,6 +8,7 @@ from __future__ import division, print_function, absolute_import
 
 import networkx as nx
 import numpy as np
+from numpy.testing import assert_equal
 
 from .trajectory import LightTrajectory, Event
 from .model import get_Q_blink, get_interaction_map
@@ -37,13 +38,12 @@ def gen_potential_transitions(
     current_tol_class = primary_to_tol[current_pri_state]
 
     # Yield tolerated primary process transitions.
-    for sa in Q_primary:
-        for sb in Q_primary[sa]:
-            sb_tol_class = primary_to_tol[sb]
-            if track_to_state[sb_tol_class]:
-                rate = Q_primary[sa][sb]['weight']
-                trans = (primary_name, sa, sb)
-                yield trans, rate
+    for sb in Q_primary[current_pri_state]:
+        sb_tol_class = primary_to_tol[sb]
+        if track_to_state[sb_tol_class]:
+            rate = Q_primary[current_pri_state][sb]['weight']
+            trans = (primary_name, current_pri_state, sb)
+            yield trans, rate
 
     # Yield tolerance process transitions.
     tol_classes = set(primary_to_tol.values())
@@ -122,6 +122,11 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
     # Initialize the map from edge to rate.
     edge_to_rate = model.get_edge_to_rate()
 
+    #print('forward sampling module')
+    #print(edge_to_blen)
+    #print(edge_to_rate)
+    #raise Exception
+
     # Convert the branch length map to a node time map.
     node_to_tm = get_node_to_tm(T, root, edge_to_blen)
 
@@ -170,6 +175,10 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
         # Iterate over edges, from the root towards the leaves.
         for edge in nx.bfs_edges(T, root):
 
+            # For debugging, track the number of primary process
+            # transition events on the edge.
+            npritrans = 0
+
             # For each track, initialize the event list for this edge.
             for track in tracks:
                 track.events[edge] = []
@@ -181,14 +190,18 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
             # The edge length is already accounted for using node times.
             edge_rate = edge_to_rate[edge]
 
-            # Get the time and states at the head of the edge.
-            tm = node_to_tm[na]
+            # Get the times at the edge endpoints.
+            tm_head = node_to_tm[na]
+            tm_tail = node_to_tm[nb]
+
+            #print('sampling on edge', edge, 'with edge rate', edge_rate)
+            #print('time to be spent on the edge is', tm_tail - tm_head)
+
+            # Initialize the time and states at the head of the edge.
+            tm = tm_head
             track_to_state = dict()
             for track in tracks:
                 track_to_state[track.name] = track.history[na]
-
-            # Get the time at the tail of the edge.
-            tm_tail = node_to_tm[nb]
 
             # Add events onto the edge until the tail endpoint is reached.
             while True:
@@ -207,11 +220,19 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
                 # for sampling the wait time.
                 rate = edge_rate * sum(r for t, r in pot)
 
+                #print('rate out of the current state,')
+                #print('including edge rate contribution, is', rate)
+
                 # Sample a wait time.
                 # The wait time will be small if the rate is large.
                 if rate:
                     scale = 1 / rate
+                    #print('sampling a wait time:')
+                    #print('  remaining edge time is', tm_tail - tm)
+                    #print('  sampling wait time with rate', rate)
+                    #print('  and expectation', scale)
                     wait_time = np.random.exponential(scale)
+                    #print('  sampled wait time', wait_time)
                     tm_ev = tm + wait_time
                 else:
                     tm_ev = np.inf
@@ -231,6 +252,10 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
                 track_name, sa, sb = ts[idx]
                 track = name_to_track[track_name]
 
+                # Check that the initial state of the transition
+                # is the current state in that track.
+                assert_equal(sa, track_to_state[track_name])
+
                 # Create the new event object,
                 # add the event to the appropriate track,
                 # update the current time,
@@ -241,21 +266,28 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
                 track_to_state[track_name] = sb
 
                 # Make spam.
+                """
                 if track is pri_track:
                     codon_a = model._state_to_codon[sa]
                     codon_b = model._state_to_codon[sb]
                     print('sampled', codon_a, '->', codon_b,
                             'with hamming distance',
                             hamming_distance(codon_a, codon_b))
+                    npritrans += 1
                 elif sb:
                     print('sampled a gain of tolerance')
                 else:
                     print('sampled a loss of tolerance')
-
+                """
 
             # Update the history at the tail endpoint of the edge.
             for track in tracks:
                 track.history[nb] = track_to_state[track.name]
+
+            #print('expected', edge_rate * (tm_tail - tm_head),
+                    #'primary transitions')
+            #print('sampled', npritrans, 'primary transitions')
+            #print()
 
         # Yield the sampled trajectories.
         yield pri_track, tol_tracks
