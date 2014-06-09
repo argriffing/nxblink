@@ -248,7 +248,13 @@ def gen_forward_samples(model, seq_of_track_to_root_state):
                 ts, rates = zip(*pot)
                 weights = np.array(rates)
                 distn = weights / weights.sum()
-                idx = np.random.choice(range(n), p=distn)
+
+                # This way is better but requires new numpy.
+                #idx = np.random.choice(range(n), p=distn)
+
+                # This way is worse but works for older numpy.
+                idx = np.random.multinomial(1, distn).argmax()
+
                 track_name, sa, sb = ts[idx]
                 track = name_to_track[track_name]
 
