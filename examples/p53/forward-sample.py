@@ -148,7 +148,7 @@ def main(args):
 
     # Read the alignment.
     print('reading the alignment...')
-    with open('testseq') as fin:
+    with open(args.align_in) as fin:
         name_codons_list = list(app_helper.read_phylip(fin))
 
     # Read the interpreted disease data.
@@ -262,8 +262,6 @@ if __name__ == '__main__':
             help='limit the number of summarized columns')
     parser.add_argument('--disease', required=True,
             help='csv file with filtered disease data')
-    parser.add_argument('--align-out', required=True,
-            help='output alignment file')
     parser.add_argument('--kappa', required=True, type=rate_ratio_arg,
             help='mutational nucleotide transition/transversion ratio')
     parser.add_argument('--pA', required=True, type=prob_arg,
@@ -280,6 +278,10 @@ if __name__ == '__main__':
             help='rate of amino acid tolerance loss')
     parser.add_argument('--newick', required=True,
             help='newick tree file')
+    parser.add_argument('--align-in', required=True,
+            help='alignment file')
+    parser.add_argument('--align-out', required=True,
+            help='output alignment file')
 
 
     main(parser.parse_args())
