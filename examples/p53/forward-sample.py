@@ -64,6 +64,19 @@ def rate_ratio_arg(s):
     return ratio
 
 
+def get_tree_info(f_newick, root_at_human_leaf=False):
+    # f_newick : newick file open for reading
+    tree, root, leaf_name_pairs = app_helper.read_newick(f_newick)
+    if root_at_human_leaf:
+        all_nodes = set(tree)
+        name_to_leaf = dict((v, k) for k, v in leaf_name_pairs)
+        human_leaf = name_to_leaf['Has']
+        root = human_leaf
+    tree, root, edge_to_blen = _tree_helper(tree, root)
+    name_to_leaf = dict((name, leaf) for leaf, name in leaf_name_pairs)
+    return tree, root, edge_to_blen, name_to_leaf
+
+
 def sample_primary_state(primary_distn, primary_to_tol, track_to_state):
     """
     Sample a primary state conditional on the disease data.
@@ -93,15 +106,16 @@ def main(args):
     rate_on = args.rate_on
     rate_off = args.rate_off
 
-    # Specify the model.
-    # Define the rate matrix for a single blinking trajectory,
-    # and the prior blink state distribution.
-
     # Specify the tree shape, the root,
     # the branch lengths, and the map from leaf name to leaf node.
     # Root the tree at the human leaf.
-    tree, root, edge_to_blen, name_to_leaf = p53model.get_tree_info(
-            root_at_human_leaf=True)
+    with open(args.newick) as fin:
+        tree, root, edge_to_blen, name_to_leaf = get_tree_info(
+                root_at_human_leaf=True)
+
+    # Specify the model.
+    # Define the rate matrix for a single blinking trajectory,
+    # and the prior blink state distribution.
 
     # Flip edge_to_blen and edge_to_rate.
     edge_to_rate = edge_to_blen
@@ -251,6 +265,8 @@ if __name__ == '__main__':
             help='rate of amino acid tolerance gain')
     parser.add_argument('--rate-off', required=True, type=rate_arg,
             help='rate of amino acid tolerance loss')
+    parser.add_argument('--newick', required=True,
+            help='newick tree file')
 
 
     main(parser.parse_args())
