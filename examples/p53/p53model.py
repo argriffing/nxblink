@@ -22,15 +22,17 @@ __all__ = [
         ]
 
 
-def _get_genetic_code():
-    """
-    Read the genetic code.
+#FIXME unused?
+#def _get_genetic_code():
+    #"""
+    #Read the genetic code.
+#
+    #"""
+    #with open('universal.code.txt') as fin:
+        #return app_helper.read_genetic_code(fin)
 
-    """
-    with open('universal.code.txt') as fin:
-        return app_helper.read_genetic_code(fin)
 
-
+#FIXME unused?
 def _get_jeff_params_e():
     """
     Copypasted from raoteh/examples/p53.py
@@ -70,6 +72,7 @@ def _get_jeff_params_e():
             tree, root, leaf_name_pairs)
 
 
+#FIXME unused?
 def _tree_helper(tree, root):
     """
     Convert the undirected tree to a DiGraph and get the edge_to_blen map.
@@ -82,11 +85,12 @@ def _tree_helper(tree, root):
     return T, root, edge_to_blen
 
 
-def get_Q_primary_and_distn():
+#FIXME unused?
+def get_Q_primary_and_distn(genetic_code):
     """
     """
     # Get the parameters inferred according to the project with Jeff and Liwen.
-    genetic_code = _get_genetic_code()
+    #genetic_code = _get_genetic_code()
     ret = _get_jeff_params_e()
     kappa, omega, A, C, T, G, rho, tree, root, leaf_name_pairs = ret
     Q_primary, primary_distn, state_to_residue, residue_to_part = create_mg94(
@@ -96,7 +100,8 @@ def get_Q_primary_and_distn():
     return Q_primary, primary_distn
 
 
-def get_primary_to_tol():
+#FIXME unused?
+def get_primary_to_tol(genetic_code):
     """
     Return a map from primary state to tolerance track name.
 
@@ -105,7 +110,7 @@ def get_primary_to_tol():
     """
     # Define the default process codon rate matrix
     # and distribution and tolerance classes.
-    genetic_code = _get_genetic_code()
+    #genetic_code = _get_genetic_code()
     ret = _get_jeff_params_e()
     kappa, omega, A, C, T, G, rho, tree, root, leaf_name_pairs = ret
     info = create_mg94(
@@ -118,6 +123,7 @@ def get_primary_to_tol():
     return primary_to_part
 
 
+#FIXME unused?
 def get_tree_info(root_at_human_leaf=False):
     ret = _get_jeff_params_e()
     kappa, omega, A, C, T, G, rho, tree, root, leaf_name_pairs = ret
@@ -141,6 +147,7 @@ class Model(object):
             rate_on, rate_off,
             tree, root,
             edge_to_blen, edge_to_rate,
+            genetic_code,
             ):
         """
 
@@ -160,7 +167,7 @@ class Model(object):
         self._edge_to_rate = edge_to_rate
 
         # construct and store more details of the model
-        genetic_code = _get_genetic_code()
+        #genetic_code = _get_genetic_code()
         info = create_mg94(
                 self._A, self._C, self._G, self._T,
                 self._kappa, self._omega, genetic_code,

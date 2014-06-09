@@ -186,7 +186,7 @@ def main(args):
     ncols = len(selected_codon_columns)
 
     # Re-read the genetic code to pass to the per-column analysis.
-    with open('universal.code.txt') as fin:
+    with open(args.code) as fin:
         genetic_code = app_helper.read_genetic_code(fin)
 
     # Further process the genetic code.
@@ -198,6 +198,7 @@ def main(args):
             rate_on, rate_off,
             tree, root,
             edge_to_blen, edge_to_rate,
+            genetic_code,
             )
     
     # from the model, extract the primary state distribution
@@ -282,6 +283,8 @@ if __name__ == '__main__':
             help='alignment file')
     parser.add_argument('--align-out', required=True,
             help='output alignment file')
+    parser.add_argument('--code', required=True,
+            help='input file defining the genetic code')
 
 
     main(parser.parse_args())
