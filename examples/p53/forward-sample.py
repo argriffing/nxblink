@@ -64,6 +64,19 @@ def rate_ratio_arg(s):
     return ratio
 
 
+def _tree_helper(tree, root):
+    """
+    Convert the undirected tree to a DiGraph and get the edge_to_blen map.
+
+    """
+    edge_to_blen = {}
+    T = nx.DiGraph()
+    for va, vb in nx.bfs_edges(tree, root):
+        T.add_edge(va, vb)
+        edge_to_blen[va, vb] = tree[va][vb]['weight']
+    return T, root, edge_to_blen
+
+
 def get_tree_info(f_newick, root_at_human_leaf=False):
     # f_newick : newick file open for reading
     tree, root, leaf_name_pairs = app_helper.read_newick(f_newick)
@@ -111,7 +124,7 @@ def main(args):
     # Root the tree at the human leaf.
     with open(args.newick) as fin:
         tree, root, edge_to_blen, name_to_leaf = get_tree_info(
-                root_at_human_leaf=True)
+                fin, root_at_human_leaf=True)
 
     # Specify the model.
     # Define the rate matrix for a single blinking trajectory,
