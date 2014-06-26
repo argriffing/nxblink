@@ -10,8 +10,7 @@ import numpy as np
 import networkx as nx
 
 from .util import (
-        get_total_rates, get_omega, get_poisson_rates,
-        get_uniformized_P_nx, get_identity_P_nx)
+        get_total_rates, get_omega, get_uniformized_P_nx, get_identity_P_nx)
 
 
 class LightTrajectory(object):
@@ -78,11 +77,11 @@ class Trajectory(LightTrajectory):
         events : dict, optional
             map from permanent edge to list of events
         prior_root_distn : dict, optional
-            x
-        Q_nx : x
-            x
-        uniformization_factor : x
-            x
+            prior state distribution at the root
+        Q_nx : networkx DiGraph
+            rate matrix as a networkx directed graph
+        uniformization_factor : float
+            uniformization factor that suggests 2.0
 
         """
         self.name = name
