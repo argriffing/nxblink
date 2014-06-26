@@ -47,7 +47,7 @@ from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.maxlikelihood import get_blink_rate_mle
 from nxblink.trajectory import Trajectory
-from nxblink.summary import (BlinkSummary,
+from nxblink.summary import (
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         init_tracks, gen_samples,
@@ -117,7 +117,6 @@ def run(model, data, nburnin, nsamples):
     va_vb_type_to_count = defaultdict(int)
     total_dwell_off = 0
     total_dwell_on = 0
-    blink_summary = BlinkSummary()
 
     # initialize a summary
     summary = Summary(T, root, node_to_tm, primary_to_tol, Q_primary)

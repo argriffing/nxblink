@@ -27,7 +27,7 @@ from nxblink.util import get_node_to_tm
 from nxblink.navigation import gen_segments
 from nxblink.maxlikelihood import get_blink_rate_mle
 from nxblink.trajectory import Trajectory
-from nxblink.summary import (BlinkSummary, Summary,
+from nxblink.summary import (Summary,
         get_ell_init_contrib, get_ell_dwell_contrib, get_ell_trans_contrib)
 from nxblink.raoteh import (
         init_tracks, gen_samples, update_track_data_for_zero_blen)
@@ -171,12 +171,7 @@ def main(args):
         # of the current EM iteration.
         summary = Summary(tree, root, node_to_tm, primary_to_tol, Q_primary)
 
-        # Summaries of blinking states.
-        #Q_blink = model.get_Q_blink()
-        #blink_distn = model.get_blink_distn()
-
         # Summarize some codon column histories.
-        #blink_summary = BlinkSummary()
         for i, codon_column in enumerate(selected_codon_columns):
             pos = i + 1
             benign_residues = pos_to_benign_residues.get(pos, set())
