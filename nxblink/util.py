@@ -6,6 +6,9 @@ from __future__ import division, print_function, absolute_import
 
 import networkx as nx
 
+import nxctmctree
+from nxctmctree.trajectory import get_node_to_tm
+
 
 def get_omega(total_rates, uniformization_factor):
     max_rate = max(total_rates.values())
@@ -98,32 +101,6 @@ def get_identity_P_nx(states):
     for s in states:
         P_nx.add_edge(s, s, weight=1)
     return P_nx
-
-
-def get_node_to_tm(T, root, node_to_blen):
-    """
-    Use branch lengths to compute the distance from each node to the root.
-
-    Parameters
-    ----------
-    T : networkx DiGraph
-        the tree
-    root : hashable
-        the root of the tree
-    node_to_blen : dict
-        branch length associated with each directed edge
-
-    Returns
-    -------
-    node_to_tm : dict
-        map from node to distance from the root
-
-    """
-    node_to_tm = {root : 0}
-    for edge in nx.bfs_edges(T, root):
-        va, vb = edge
-        node_to_tm[vb] = node_to_tm[va] + node_to_blen[edge]
-    return node_to_tm
 
 
 def hamming_distance(va, vb):
