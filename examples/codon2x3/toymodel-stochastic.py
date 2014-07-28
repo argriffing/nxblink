@@ -57,6 +57,18 @@ from nxblink.toydata import DataA, DataB, DataC, DataD
 from nxblink.summary import Summary
 from nxblink.em import get_ll_root, get_ll_dwell, get_ll_trans
 
+#TODO
+# This code has a problem which should be easy to debug.
+# I am computing expected log likelihood from the sampled trajectories
+# in two ways, and they are giving different answers.
+# One way is through an accumulation object that records a large amount
+# of information about the sampled trajectories.
+# The other way computes log likelihood contribution per trajectory.
+# So the first way computes expected log likelihood through
+# expected sufficient statistics, whereas the second way computes expected
+# log likelihood by computing log likelihood contribution per sampled track,
+# and computes the sample average.
+
 
 def get_blink_dwell_times(T, node_to_tm, blink_tracks):
     """
