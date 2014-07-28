@@ -34,6 +34,10 @@ def get_ll_dwell(summary, pre_Q, distn, blink_on, blink_off,
         blink rate on
     blink_off : float, or exotic float-like with derivatives information
         blink rate off
+    edges : sequence
+        ordered sequence of directed edges of the tree
+    edge_rates : dense possibly exotic array
+        edge-specific rate scaling factors
 
     Returns
     -------
@@ -96,6 +100,10 @@ def get_ll_trans(summary, pre_Q, distn, blink_on, blink_off,
         blink rate on
     blink_off : float, or exotic float-like with derivatives information
         blink rate off
+    edges : sequence
+        ordered sequence of directed edges of the tree
+    edge_rates : dense possibly exotic array
+        edge-specific rate scaling factors
 
     Returns
     -------
