@@ -128,8 +128,8 @@ def run(model, data, nburnin, nsamples):
         summary.on_sample(pri_track, tol_tracks)
 
         # Compute a summary using the ad hoc code.
-        blink_summary.on_sample(T, root, node_to_tm, edge_to_rate,
-                pri_track, tol_tracks, primary_to_tol)
+        #blink_summary.on_sample(T, root, node_to_tm, edge_to_rate,
+                #pri_track, tol_tracks, primary_to_tol)
 
         # Summarize the trajectories.
         for edge in T.edges():
@@ -222,6 +222,7 @@ def run(model, data, nburnin, nsamples):
     print('dwell on :', total_dwell_on / nsamples)
     print()
 
+    """
     # report infos per column
     print(
             blink_summary.xon_root_count,
@@ -240,9 +241,10 @@ def run(model, data, nburnin, nsamples):
             blink_summary.off_xon_dwell,
             blink_summary.xon_off_dwell,
             )
-    print('ml rate on:', ml_rate_on)
-    print('ml rate off:', ml_rate_off)
-    print()
+    """
+    #print('ml rate on:', ml_rate_on)
+    #print('ml rate off:', ml_rate_off)
+    #print()
 
     print('comprehensive summary:')
     print(summary)
@@ -288,7 +290,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model',
             choices=('a', 'b', 'c'), default='a',
-            help='specify the model complexity')
+            help=(
+                'specify the model complexity ('
+                'a: highly symmetric model, '
+                'b: less symmetric model, '
+                'c: less symmetric model with some vanishing edge rates)'))
     parser.add_argument('--data',
             choices=(0, 1, 2, 3), type=int, default=0,
             help=(
@@ -300,10 +306,10 @@ if __name__ == '__main__':
                 'and assume all others benign)'))
     parser.add_argument('--k', type=int, default=80,
             help='square root of number of samples')
-    parser.add_argument('--out-specific',
-            help='model-specific output file')
-    parser.add_argument('--out-generic',
-            help='generic output file')
+    #parser.add_argument('--out-specific',
+            #help='model-specific output file')
+    #parser.add_argument('--out-generic',
+            #help='generic output file')
     args = parser.parse_args()
     main(args)
 

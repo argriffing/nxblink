@@ -4,10 +4,6 @@ This toy model is described in raoteh/examples/codon2x3.
 """
 from __future__ import division, print_function, absolute_import
 
-#TODO move this into npblink which is more suited to work with dense
-#     matrices (e.g. for computing exact expectations through
-#     frechet derivatives).
-
 import argparse
 
 import networkx as nx
@@ -24,8 +20,12 @@ from nxblink.denseutil import (
         nx_to_np_rate_matrix, np_to_nx_transition_matrix,
         compute_edge_expectation, compute_dwell_times)
 
-import nxmodel
-import nxmodelb
+#from nxblink.toymodel
+
+
+#import nxmodel
+#import nxmodelb
+
 
 
 def run(model, compound_states, node_to_data_fset):
