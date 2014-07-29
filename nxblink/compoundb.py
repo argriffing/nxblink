@@ -6,6 +6,71 @@ from __future__ import division, print_function, absolute_import
 
 import networkx as nx
 
+from .summary import BaseSummary
+
+
+#TODO
+# Instead of summarizing split tracks, summarize a compound state track.
+class Summary(BaseSummary):
+    """
+    A summary for blinking process trajectories split into separate tracks.
+
+    """
+    def on_sample(self, primary_track, tolerance_tracks):
+        """
+
+        """
+        self.nsamples += 1
+
+        # add the root counts
+        self._on_sample_root(primary_track, tolerance_tracks)
+
+        # add info per edge
+        for edge in self._T.edges():
+
+            # transition summaries
+            self._on_primary_trans(edge, primary_track)
+            self._on_tolerance_trans(edge, tolerance_tracks)
+
+            # dwell time summaries
+            for elapsed, pri_state, tol_states in _gen_segments_for_dwell(
+                    edge, self._node_to_tm, primary_track, tolerance_tracks):
+
+                # dwell time contributions per segment
+                self._on_primary_dwell(edge, elapsed, pri_state, tol_states)
+                self._on_tolerance_dwell(edge, elapsed, pri_state, tol_states)
+
+    def _on_sample_root(self, primary_track, tolerance_tracks):
+        pri_state = primary_track.history[self._root]
+        self.root_pri_to_count[pri_state] += 1
+        for tol_track in tolerance_tracks:
+            tol_state = tol_track.history[self._root]
+            if not tol_state:
+                self.root_off_count += 1
+            elif tol_state != self._primary_to_tol[pri_state]:
+                self.root_xon_count += 1
+
+    def _on_primary_trans(self, edge, primary_track):
+        # the order of the transitions does not matter in this step
+        G = self.edge_to_pri_trans[edge]
+        for ev in primary_track.events[edge]:
+            trans = (ev.sa, ev.sb)
+            if G.has_edge(*trans):
+                G[ev.sa][ev.sb]['weight'] += 1
+            else:
+                G.add_edge(*trans, weight=1)
+
+    def _on_tolerance_trans(self, edge, tolerance_tracks):
+        # the order of the transitions does not matter in this step
+        for track in tolerance_tracks:
+            for ev in track.events[edge]:
+                if ev.sa and not ev.sb:
+                    self.edge_to_xon_off_trans[edge] += 1
+                elif not ev.sa and ev.sb:
+                    self.edge_to_off_xon_trans[edge] += 1
+                else:
+                    raise Exception
+
 
 class State(object):
     def __init__(self, pri, tol):
