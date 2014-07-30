@@ -9,28 +9,43 @@ import networkx as nx
 from .summary import BaseSummary
 
 
-#TODO
-# Instead of summarizing split tracks, summarize a compound state track.
+#TODO this is generic enough to work for any process
+#TODO put this in a navigation.py module in nxctmctree
+def gen_segments_for_dwell(edge, node_to_tm, track):
+    va, vb = edge
+    tm = node_to_tm[va]
+    state = track.history[na]
+
+
 class Summary(BaseSummary):
     """
-    A summary for blinking process trajectories split into separate tracks.
+    A sufficient summary of blinking model process trajectories.
+
+    This differs from a summary that simply records dwell time in each
+    state and transition counts between states, because for our particular
+    model some of these quantities can be reduced (e.g. summed)
+    without losing sufficiency for parameter estimation.
+
+    This summary class can be understood as the more naive of a couple of
+    summary classes.  The more sophisticated summary uses track
+    input that consists of separate tracks for each component of the compound
+    state, whereas this summary class summarizes a single track.
 
     """
-    def on_sample(self, primary_track, tolerance_tracks):
+    def on_track(self, track):
         """
 
         """
         self.nsamples += 1
 
         # add the root counts
-        self._on_sample_root(primary_track, tolerance_tracks)
+        self._on_sample_root(track)
 
         # add info per edge
         for edge in self._T.edges():
 
             # transition summaries
-            self._on_primary_trans(edge, primary_track)
-            self._on_tolerance_trans(edge, tolerance_tracks)
+            self._on_sample_trans(edge, track)
 
             # dwell time summaries
             for elapsed, pri_state, tol_states in _gen_segments_for_dwell(
@@ -40,33 +55,33 @@ class Summary(BaseSummary):
                 self._on_primary_dwell(edge, elapsed, pri_state, tol_states)
                 self._on_tolerance_dwell(edge, elapsed, pri_state, tol_states)
 
-    def _on_sample_root(self, primary_track, tolerance_tracks):
-        pri_state = primary_track.history[self._root]
-        self.root_pri_to_count[pri_state] += 1
-        for tol_track in tolerance_tracks:
-            tol_state = tol_track.history[self._root]
-            if not tol_state:
-                self.root_off_count += 1
-            elif tol_state != self._primary_to_tol[pri_state]:
-                self.root_xon_count += 1
+    def _on_sample_root(self, track):
+        root_state = track.history[self._root]
+        root_tol_class = self._primary_to_tol[root_state.pri]
+        self.root_pri_to_count[root_state.pri] += 1
+        for tol_class, tol_state in enumerate(state.tol):
+            if tol_class != root_tol_class:
+                if tol_state:
+                    self.root_xon_count += 1
+                else:
+                    self.root_off_count += 1
 
-    def _on_primary_trans(self, edge, primary_track):
+    def _on_sample_trans(self, edge, track):
         # the order of the transitions does not matter in this step
         G = self.edge_to_pri_trans[edge]
-        for ev in primary_track.events[edge]:
-            trans = (ev.sa, ev.sb)
-            if G.has_edge(*trans):
-                G[ev.sa][ev.sb]['weight'] += 1
+        for ev in track.events[edge]:
+            # detect primary state transition change vs. tolerance change
+            if ev.sa.pri != ev.sb.pri:
+                if G.has_edge(pri_a, pri_b)
+                    G[ev.sa][ev.sb]['weight'] += 1
+                else:
+                    G.add_edge(ev.sa, ev.sb, weight=1)
             else:
-                G.add_edge(*trans, weight=1)
-
-    def _on_tolerance_trans(self, edge, tolerance_tracks):
-        # the order of the transitions does not matter in this step
-        for track in tolerance_tracks:
-            for ev in track.events[edge]:
-                if ev.sa and not ev.sb:
+                ta = sum(ev.sa.tols)
+                tb = sum(ev.sb.tols)
+                if tb == ta - 1:
                     self.edge_to_xon_off_trans[edge] += 1
-                elif not ev.sa and ev.sb:
+                elif tb == ta + 1:
                     self.edge_to_off_xon_trans[edge] += 1
                 else:
                     raise Exception
