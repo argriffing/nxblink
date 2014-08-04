@@ -8,9 +8,12 @@ state space on a separate track and using CTBN methods.
 """
 from __future__ import division, print_function, absolute_import
 
+from itertools import product
+
 import networkx as nx
 
 import nxctmctree
+import nxctmctree.raoteh
 
 from .summary import BaseSummary
 
@@ -93,7 +96,7 @@ class Summary(BaseSummary):
         for ev in track.events[edge]:
             # detect primary state transition change vs. tolerance change
             if ev.sa.pri != ev.sb.pri:
-                if G.has_edge(pri_a, pri_b)
+                if G.has_edge(pri_a, pri_b):
                     G[ev.sa][ev.sb]['weight'] += 1
                 else:
                     G.add_edge(ev.sa, ev.sb, weight=1)
@@ -111,7 +114,7 @@ class Summary(BaseSummary):
 def gen_states(pri_to_tol):
     primary_states = tuple(pri_to_tol)
     all_tols = set(pri_to_tol.values())
-    ntol = len(tols)
+    ntol = len(all_tols)
     if all_tols != set(range(ntol)):
         raise Exception
     for pri, tol_class in pri_to_tol.items():
@@ -172,7 +175,7 @@ def _gen_tol_successors(on_rate, off_rate, pri_to_tol, s):
     """
     pri_class = pri_to_tol[s.pri]
     rates = [on_rate, off_rate]
-    for tol_class, tol_state in enumerate(s.tols):
+    for tol_class, tol_state in enumerate(s.tol):
         sb = s.copy()
         sb.tol[tol_class] = 1 - tol_state
         if state_is_consistent(pri_to_tol, sb):
@@ -225,9 +228,70 @@ def gen_raoteh_samples(model, data, nburnin, nsamples):
         The number of iterations of yielded sampled trajectories after burn in.
 
     """
+    # Extract relevant information from the model object.
+    T, root = model.get_T_and_root()
+    rate_on = model.get_rate_on()
+    rate_off = model.get_rate_off()
+    Q_pri = model.get_Q_primary()
+    edge_to_blen = model.get_edge_to_blen()
+    edge_to_rate = model.get_edge_to_rate()
+    pri_distn = model.get_primary_distn()
+    pri_to_tol = model.get_primary_to_tol()
+
+    # Modify pri_to_tol to have values (0, 1, 2) instead of ('T0', 'T1', 'T2').
+    tol_name_to_idx = dict((n, i) for i, n in enumerate(('T0', 'T1', 'T2')))
+    pri_to_tol = dict((p, tol_name_to_idx[i]) for p, i in pri_to_tol.items())
+
+    # Define the set of all compound states, required for Rao-Teh sampling.
+    set_of_all_states = set(gen_states(pri_to_tol))
+
+    # Determine the equilibrium distribution given the primary
+    # state distribution and the on and off tolerance blinking rates.
+    root_prior_distn = {}
+    p_on = rate_on / (rate_on + rate_off)
+    p_off = rate_off / (rate_on + rate_off)
+    for state in set_of_all_states:
+        p = pri_distn.get(state.pri, None)
+        if p is not None:
+            for tol, tol_name in enumerate(('T0', 'T1', 'T2')):
+                if pri_to_tol[state.pri] != tol:
+                    if state.tol[tol]:
+                        p *= p_on
+                    else:
+                        p *= p_off
+            root_prior_distn[state] = p
+
+    # Extract relevant information from the data object.
+    # This involves creating sets of allowed compound states
+    # from sets of allowed states of the components.
+    pri_node_to_fset = data.get_primary_data()
+    tol_name_to_node_to_fset = data.get_tolerance_data()
+    node_to_data_fset = {}
+    for node in T:
+        compound_fset = set()
+        tol_fsets = []
+        for tol, tol_name in enumerate(('T0', 'T1', 'T2')):
+            fset = tol_name_to_node_to_fset[tol_name][node]
+            tol_fsets.append(fset)
+        for tol_states in product(*tol_fsets):
+            for pri_state in pri_node_to_fset[node]:
+                state = State(pri_state, tol_states)
+                if state_is_consistent(pri_to_tol, state):
+                    compound_fset.add(state)
+        node_to_data_fset[node] = compound_fset
+
+    # Get the compound state rate matrix.
+    Q = get_Q(Q_pri, rate_on, rate_off, pri_to_tol)
+
+    # Use the same rate matrix for each edge.
+    edge_to_Q = dict((edge, Q) for edge in edge_to_rate)
+
+    # Use the vanilla (non-CTBN) Rao-Teh scheme to sample trajectories.
+    prev_track = None
     for track in nxctmctree.raoteh.gen_raoteh_trajectories(
             T, edge_to_Q, root, root_prior_distn, node_to_data_fset,
-            edge_to_blen, edge_to_rate,
-            set_of_all_states, initial_track, ntrajectories)
-    yield track
+            edge_to_blen, edge_to_rate, set_of_all_states,
+            prev_track, nburnin, nsamples):
+        yield track
+        prev_track = track
 

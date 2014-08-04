@@ -9,10 +9,11 @@ from __future__ import division, print_function, absolute_import
 from numpy.testing import assert_equal
 
 import nxblink
+import nxblink.raoteh
+import nxblink.compoundb
 from nxblink.toymodel import BlinkModelA, BlinkModelB, BlinkModelC
 from nxblink.toydata import DataA, DataB, DataC, DataD
 
-from nxblink.compoundb import bar
 
 
 def test_ctbn_raoteh_sampling():
@@ -36,7 +37,7 @@ def test_vanilla_raoteh_sampling_compoundb():
     for model in BlinkModelA, BlinkModelB, BlinkModelC:
         for data in DataA, DataB, DataC, DataD:
             nsampled = 0
-            for track in compoundb.gen_raoteh_samples(
+            for track in nxblink.compoundb.gen_raoteh_samples(
                     model, data, nburnin, nsamples):
                 nsampled += 1
             yield assert_equal, nsampled, nsamples
