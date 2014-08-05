@@ -53,6 +53,11 @@ Coverage:
     $ python-coverage html
     $ chromium-browser htmlcov/index.html
 
+Profiling:
+
+    $ python -m cProfile -o profile_data.pyprof runtests.py
+    $ pyprof2calltree -i profile_data.pyprof -k
+
 Build docs locally (NOT IMPLEMENTED):
 
     $ sh make-docs.sh
